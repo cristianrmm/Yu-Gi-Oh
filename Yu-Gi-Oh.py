@@ -8,6 +8,9 @@ import datetime
 
 def main():
     myCards = MyFile()['data']
+
+
+def AccessDB(myCards):
     myDB = mysql.connector.connect(
         host= 'localhost',
         user= 'root',
