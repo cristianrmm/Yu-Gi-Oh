@@ -7,49 +7,72 @@ import datetime
 
 def main():
     myCards = MyFile()['data']
-    print(len(AllCardSets(myCards)))
+    #DB_Access(AllCardSets(myCards))
+    print(AllCardSets(myCards)[20000])
 
 # access my Main Database
-def AccessDB(myCards):
+def DB_Access(myCards):
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
         passwd='',
         database='yu_gi_oh'
     )
-    InsertItemDB(myDB, myCards, 100)
+
     myDB.close()
+
+def DB_CreateTabelSets(mydb):
+    pass
 
 #collect all sets in yugioh
 def AllCardSets(myCards):
     mySets = []
     index= 0
     while index < len(myCards):
-        #print(index)
         if 'card_sets' in myCards[index]:
             for i in myCards[index]['card_sets']:
+                i['id'] = myCards[index]['id']
+                set = ExpendSetCode(i['set_code'])
+                del i['set_code']
+                i['set'] = set[0]
+                i['region'] = set[1]
+                i['num'] = set[2]
                 mySets.append(i)
         index = index + 1
     return mySets
 
-
+#split the set_code to three indevidual componets of set, region, and number of the card in the set
+def ExpendSetCode(setCode):
+    set = setCode.split('-')
+    region = ""
+    num = ""
+    if len(set) > 1:
+        for i in set[1]:
+            if i.isdigit():
+                num = num + i
+            else:
+                region = region + i
+        set.pop(1)
+    set.append(region)
+    set.append(num)
+    return set
 
 #naive approach
-def InsertItemDB(mydb, set, qty):
-    CreateTableItems(myDB, MonsterInfo(myCards))
-    n = CountRowDB(myDB)
+def DB_InsertItem(mydb, set, qty):
+    DB_CreateTableItems(myDB, MonsterInfo(myCards))
+    n = DB_CountRow(myDB)
     info = MonsterInfo(myCards)
     max = n
     print("start")
     s = time.time()
     while n < max + qty:
-        InsertCardToDB(myDB, info, myCards, n)
+        DB_InsertCard(myDB, info, myCards, n)
         n += 1
     myDB.close()
     e = time.time()
     print('done time:' + str(datetime.timedelta(seconds=e - s)))
 
-def CountRowDB(mydb):
+def DB_CountRow(mydb):
     my_cursor = mydb.cursor()
     count = """
             SELECT COUNT(*) FROM cards
@@ -70,7 +93,7 @@ def ReDefine(elements):
 def Convert(list):
     return tuple(i for i in list)
 
-def InsertCardToDB(mydb, info, cardInfo, index):
+def DB_InsertCard(mydb, info, cardInfo, index):
     my_cursor = mydb.cursor()
     info = ReDefine(info)
     values = [''] * len(info)
@@ -119,7 +142,7 @@ def LinkMarkerDirection(myCard):
     myCard['linkmarkers'] = direction
     return myCard
 
-def CreateTable(mydb):
+def DB_CreateTable(mydb):
     my_cursor = mydb.cursor()
     my_cursor.execute("CREATE DATABASE yu_gi_oh")
     mydb.commit()
@@ -131,7 +154,7 @@ def ZeroToEmpty(num):
     else:
         return num
 
-def CreateTableItems(mydb, elements):
+def DB_CreateTableItems(mydb, elements):
     elements = ReDefine(elements)
 
     my_cursor = mydb.cursor()
