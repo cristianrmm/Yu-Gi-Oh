@@ -1,6 +1,5 @@
 import requests
 import json
-import io
 import os
 import time
 import mysql.connector
@@ -8,17 +7,32 @@ import datetime
 
 def main():
     myCards = MyFile()['data']
+    print(len(AllCardSets(myCards)))
 
-#access my Main Database
+# access my Main Database
 def AccessDB(myCards):
     myDB = mysql.connector.connect(
-        host= 'localhost',
-        user= 'root',
-        passwd= '',
+        host='localhost',
+        user='root',
+        passwd='',
         database='yu_gi_oh'
     )
     InsertItemDB(myDB, myCards, 100)
     myDB.close()
+
+#collect all sets in yugioh
+def AllCardSets(myCards):
+    mySets = []
+    index= 0
+    while index < len(myCards):
+        #print(index)
+        if 'card_sets' in myCards[index]:
+            for i in myCards[index]['card_sets']:
+                mySets.append(i)
+        index = index + 1
+    return mySets
+
+
 
 #naive approach
 def InsertItemDB(mydb, set, qty):
