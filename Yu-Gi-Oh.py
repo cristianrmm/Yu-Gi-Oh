@@ -68,7 +68,6 @@ def DB_CreateTabelSets(mydb, myCards):
                     card_index INT AUTO_INCREMENT PRIMARY KEY
                     )
                     """)
-    print(my_crusor.description)
     mydb.commit()
     my_crusor.close()
 
