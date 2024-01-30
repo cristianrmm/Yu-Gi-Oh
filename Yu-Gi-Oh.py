@@ -7,22 +7,70 @@ import datetime
 
 def main():
     myCards = MyFile()['data']
-    #DB_Access(AllCardSets(myCards))
-    print(AllCardSets(myCards)[20000])
+    allSets = AllCardSets(myCards)
+    setOrder = ['id', 'set_name', 'card_set', 'region', 'num', 'set_rarity', 'set_rarity_code', 'set_price']
+    DB_Access(myCards, allSets, setOrder)
+
 
 # access my Main Database
-def DB_Access(myCards):
+def DB_Access(myCards, allSets, setOrder):
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
         passwd='',
         database='yu_gi_oh'
     )
+    #create the tables if they don't exist
+    DB_CreateTabelSets(myDB, myCards)
+    DB_CreateTableItems(myDB, MonsterInfo(myCards))
 
+    #insert every element into the tables
+    DB_InsertCard(myDB, MonsterInfo(myCards), myCards, len(myCards))
+    DB_InsertCardSet(myDB, allSets, setOrder, len(allSets))
     myDB.close()
 
-def DB_CreateTabelSets(mydb):
-    pass
+def DB_InsertCardSet(myDB, allSets, setOrder, qty):
+    my_cursor = myDB.cursor()
+    index = DB_CountRow(myDB, 'card_set')
+    sql_command = """INSERT INTO card_set(""" + setOrder[0] + """,
+                                         """ + setOrder[1] + """,
+                                         """ + setOrder[2] + """,
+                                         """ + setOrder[3] + """,
+                                         """ + setOrder[4] + """,
+                                         """ + setOrder[5] + """,
+                                         """ + setOrder[6] + """,
+                                         """ + setOrder[7] + """
+                                         ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)  
+                                         """
+
+    num = 0
+    while num < qty - index:
+        mylist = GetTuple(allSets[index + num], setOrder)
+        my_cursor.execute(sql_command, mylist)
+        num += 1
+
+    myDB.commit()
+    my_cursor.close()
+
+#creatre card_set table
+def DB_CreateTabelSets(mydb, myCards):
+    my_crusor = mydb.cursor()
+    my_crusor.execute("""
+                    CREATE TABLE IF NOT EXISTS card_set(
+                    """ + list(myCards[1]['card_sets'][0].keys())[4] + """ VARCHAR(15),
+                    """ + list(myCards[1]['card_sets'][0].keys())[0] + """ VARCHAR(127),
+                    """ + list(myCards[1]['card_sets'][0].keys())[5] + """ VARCHAR(7),
+                    """ + list(myCards[1]['card_sets'][0].keys())[6] + """ VARCHAR(7),
+                    """ + list(myCards[1]['card_sets'][0].keys())[7] + """ VARCHAR(7),
+                    """ + list(myCards[1]['card_sets'][0].keys())[1] + """ VARCHAR(63),
+                    """ + list(myCards[1]['card_sets'][0].keys())[2] + """ VARCHAR(15),
+                    """ + list(myCards[1]['card_sets'][0].keys())[3] + """ VARCHAR(15),
+                    card_index INT AUTO_INCREMENT PRIMARY KEY
+                    )
+                    """)
+    print(my_crusor.description)
+    mydb.commit()
+    my_crusor.close()
 
 #collect all sets in yugioh
 def AllCardSets(myCards):
@@ -34,7 +82,7 @@ def AllCardSets(myCards):
                 i['id'] = myCards[index]['id']
                 set = ExpendSetCode(i['set_code'])
                 del i['set_code']
-                i['set'] = set[0]
+                i['card_set'] = set[0]
                 i['region'] = set[1]
                 i['num'] = set[2]
                 mySets.append(i)
@@ -57,25 +105,11 @@ def ExpendSetCode(setCode):
     set.append(num)
     return set
 
-#naive approach
-def DB_InsertItem(mydb, set, qty):
-    DB_CreateTableItems(myDB, MonsterInfo(myCards))
-    n = DB_CountRow(myDB)
-    info = MonsterInfo(myCards)
-    max = n
-    print("start")
-    s = time.time()
-    while n < max + qty:
-        DB_InsertCard(myDB, info, myCards, n)
-        n += 1
-    myDB.close()
-    e = time.time()
-    print('done time:' + str(datetime.timedelta(seconds=e - s)))
-
-def DB_CountRow(mydb):
+#count how many rows are in a given table
+def DB_CountRow(mydb, table):
     my_cursor = mydb.cursor()
     count = """
-            SELECT COUNT(*) FROM cards
+            SELECT COUNT(*) FROM """ + table + """
             """
 
     my_cursor.execute(count)
@@ -93,7 +127,16 @@ def ReDefine(elements):
 def Convert(list):
     return tuple(i for i in list)
 
-def DB_InsertCard(mydb, info, cardInfo, index):
+#get the values froma the dictionary
+def GetTuple(myDict, myList):
+    toTuple = []
+
+    for i in myList:
+        toTuple.append(myDict[i])
+    return Convert(toTuple)
+
+def DB_InsertCard(mydb, info, cardInfo, qty):
+    index = DB_CountRow(mydb, 'cards')
     my_cursor = mydb.cursor()
     info = ReDefine(info)
     values = [''] * len(info)
@@ -116,6 +159,17 @@ def DB_InsertCard(mydb, info, cardInfo, index):
                                         active_card 
                                         )  VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 
+    num = 0
+    while num < qty - index:
+        values = RenameCollumn(index + num, info, cardInfo)
+        my_cursor.execute(sql_command, Convert(values))
+        num += 1
+
+    mydb.commit()
+    my_cursor.close()
+
+def RenameCollumn(index, info, cardInfo):
+    values = [''] * len(info)
     cardInfo[index] = LinkMarkerDirection(cardInfo[index])
     for i in cardInfo[index]:
         for j in info:
@@ -124,10 +178,7 @@ def DB_InsertCard(mydb, info, cardInfo, index):
             if j in cardInfo[index]:
                 values[info.index(j)] = cardInfo[index][j]
     values.append(False)
-    my_cursor.execute(sql_command, Convert(values))
-
-    mydb.commit()
-    my_cursor.close()
+    return values
 
 def LinkMarkerDirection(myCard):
     direction = ''
@@ -158,29 +209,29 @@ def DB_CreateTableItems(mydb, elements):
     elements = ReDefine(elements)
 
     my_cursor = mydb.cursor()
-    my_cursor.execute('''
+    my_cursor.execute("""
                         CREATE TABLE IF NOT EXISTS Cards(
-                        ''' + str(elements[0]) + ''' INT(9),
-                        ''' + str(elements[1]) + ''' VARCHAR(127),
-                        ''' + str(elements[2]) + ''' VARCHAR(63),
-                        ''' + str(elements[3]) + ''' VARCHAR(31),
-                        ''' + str(elements[4]) + ''' VARCHAR(2047),
-                        ''' + str(elements[5]) + ''' VARCHAR(31),
-                        ''' + str(elements[6]) + ''' VARCHAR(62),
-                        ''' + str(elements[7]) + ''' VARCHAR(4),
-                        ''' + str(elements[8]) + ''' VARCHAR(4),
-                        ''' + str(elements[9]) + ''' VARCHAR(2),
-                        ''' + str(elements[10]) + ''' VARCHAR(15),
-                        ''' + str(elements[11]) + ''' VARCHAR(511),
-                        ''' + str(elements[12]) + ''' VARCHAR(1023),
-                        ''' + ZeroToEmpty(str(elements[13])) + ''' VARCHAR(2),
-                        ''' + ZeroToEmpty(str(elements[14])) + ''' VARCHAR(1),
-                        ''' + str(elements[15]) + ''' VARCHAR(63),
+                        """ + str(elements[0]) + """ INT(9),
+                        """ + str(elements[1]) + """ VARCHAR(127),
+                        """ + str(elements[2]) + """ VARCHAR(63),
+                        """ + str(elements[3]) + """ VARCHAR(31),
+                        """ + str(elements[4]) + """ VARCHAR(2047),
+                        """ + str(elements[5]) + """ VARCHAR(31),
+                        """ + str(elements[6]) + """ VARCHAR(62),
+                        """ + str(elements[7]) + """ VARCHAR(4),
+                        """ + str(elements[8]) + """ VARCHAR(4),
+                        """ + str(elements[9]) + """ VARCHAR(2),
+                        """ + str(elements[10]) + """ VARCHAR(15),
+                        """ + str(elements[11]) + """ VARCHAR(511),
+                        """ + str(elements[12]) + """ VARCHAR(1023),
+                        """ + ZeroToEmpty(str(elements[13])) + """ VARCHAR(2),
+                        """ + ZeroToEmpty(str(elements[14])) + """ VARCHAR(1),
+                        """ + str(elements[15]) + """ VARCHAR(63),
                         active_card BOOLEAN NOT NULL DEFAULT 0,
                         card_index INT AUTO_INCREMENT PRIMARY KEY,
-                        CONSTRAINT my_cards UNIQUE ('''+ str(elements[0]) +''',  '''+ str (elements[1]) +''')
+                        CONSTRAINT my_cards UNIQUE ("""+ str(elements[0]) +""",  """+ str (elements[1]) +""")
                         )
-                      ''')
+                      """)
     mydb.commit()
     my_cursor.close()
 
