@@ -4,16 +4,20 @@ import os
 import time
 import mysql.connector
 import datetime
+import urllib
+import glob
+
 
 def main():
     myCards = MyFile()['data']
+
     allSets = AllCardSets(myCards)
-    setOrder = ['id', 'set_name', 'card_set', 'region', 'num', 'set_rarity', 'set_rarity_code', 'set_price']
-    DB_Access(myCards, allSets, setOrder)
+    DB_Access(myCards, allSets)
+    SaveImages(myCards)
 
 
 # access my Main Database
-def DB_Access(myCards, allSets, setOrder):
+def DB_Access(myCards, allSets):
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
@@ -26,10 +30,11 @@ def DB_Access(myCards, allSets, setOrder):
 
     #insert every element into the tables
     DB_InsertCard(myDB, MonsterInfo(myCards), myCards, len(myCards))
-    DB_InsertCardSet(myDB, allSets, setOrder, len(allSets))
+    DB_InsertCardSet(myDB, allSets, len(allSets))
     myDB.close()
 
-def DB_InsertCardSet(myDB, allSets, setOrder, qty):
+def DB_InsertCardSet(myDB, allSets, qty):
+    setOrder = ['id', 'set_name', 'card_set', 'region', 'num', 'set_rarity', 'set_rarity_code', 'set_price']
     my_cursor = myDB.cursor()
     index = DB_CountRow(myDB, 'card_set')
     sql_command = """INSERT INTO card_set(""" + setOrder[0] + """,
@@ -71,39 +76,6 @@ def DB_CreateTabelSets(mydb, myCards):
     mydb.commit()
     my_crusor.close()
 
-#collect all sets in yugioh
-def AllCardSets(myCards):
-    mySets = []
-    index= 0
-    while index < len(myCards):
-        if 'card_sets' in myCards[index]:
-            for i in myCards[index]['card_sets']:
-                i['id'] = myCards[index]['id']
-                set = ExpendSetCode(i['set_code'])
-                del i['set_code']
-                i['card_set'] = set[0]
-                i['region'] = set[1]
-                i['num'] = set[2]
-                mySets.append(i)
-        index = index + 1
-    return mySets
-
-#split the set_code to three indevidual componets of set, region, and number of the card in the set
-def ExpendSetCode(setCode):
-    set = setCode.split('-')
-    region = ""
-    num = ""
-    if len(set) > 1:
-        for i in set[1]:
-            if i.isdigit():
-                num = num + i
-            else:
-                region = region + i
-        set.pop(1)
-    set.append(region)
-    set.append(num)
-    return set
-
 #count how many rows are in a given table
 def DB_CountRow(mydb, table):
     my_cursor = mydb.cursor()
@@ -117,28 +89,10 @@ def DB_CountRow(mydb, table):
     my_cursor.close()
     return n[0][0]
 
-def ReDefine(elements):
-    for i in elements:
-        if i == 'desc':
-            elements[elements.index(i)] = 'description'
-    return elements
-
-def Convert(list):
-    return tuple(i for i in list)
-
-#get the values froma the dictionary
-def GetTuple(myDict, myList):
-    toTuple = []
-
-    for i in myList:
-        toTuple.append(myDict[i])
-    return Convert(toTuple)
-
 def DB_InsertCard(mydb, info, cardInfo, qty):
     index = DB_CountRow(mydb, 'cards')
     my_cursor = mydb.cursor()
     info = ReDefine(info)
-    values = [''] * len(info)
     sql_command = """INSERT INTO cards(""" + info[0] + """,
                                         """ + info[1] + """,
                                         """ + info[2] + """,
@@ -167,42 +121,11 @@ def DB_InsertCard(mydb, info, cardInfo, qty):
     mydb.commit()
     my_cursor.close()
 
-def RenameCollumn(index, info, cardInfo):
-    values = [''] * len(info)
-    cardInfo[index] = LinkMarkerDirection(cardInfo[index])
-    for i in cardInfo[index]:
-        for j in info:
-            if j == 'description':
-                values[info.index(j)] = cardInfo[index]['desc']
-            if j in cardInfo[index]:
-                values[info.index(j)] = cardInfo[index][j]
-    values.append(False)
-    return values
-
-def LinkMarkerDirection(myCard):
-    direction = ''
-    n = 0
-    if 'linkmarkers' in myCard:
-        for i in myCard['linkmarkers']:
-            if n == 0:
-                direction = i
-                n = 1
-            else:
-                direction = direction + "," + i
-    myCard['linkmarkers'] = direction
-    return myCard
-
 def DB_CreateTable(mydb):
     my_cursor = mydb.cursor()
     my_cursor.execute("CREATE DATABASE yu_gi_oh")
     mydb.commit()
     my_cursor.close()
-
-def ZeroToEmpty(num):
-    if num == '0':
-        return ""
-    else:
-        return num
 
 def DB_CreateTableItems(mydb, elements):
     elements = ReDefine(elements)
@@ -234,6 +157,45 @@ def DB_CreateTableItems(mydb, elements):
     mydb.commit()
     my_cursor.close()
 
+#collect all sets in yugioh
+def AllCardSets(myCards):
+    mySets = []
+    index= 0
+    while index < len(myCards):
+        if 'card_sets' in myCards[index]:
+            for i in myCards[index]['card_sets']:
+                i['id'] = myCards[index]['id']
+                set = ExpendSetCode(i['set_code'])
+                del i['set_code']
+                i['card_set'] = set[0]
+                i['region'] = set[1]
+                i['num'] = set[2]
+                mySets.append(i)
+        index = index + 1
+    return mySets
+
+#Get all cards Info other wise this program won't work
+def Api():
+    try:
+        api = requests.get("https://db.ygoprodeck.com/api/v7/cardinfo.php")
+        print(api.status_code)
+        myapi = json.loads(api.content)
+        #Save(myapi)
+        print(myapi['data'][0]['id'])
+
+    except Exception as e:
+        return("Error..")
+
+#Get every main unique key from the Json file
+def CardDesc(cardsInfo):
+    allsets= []
+    n = 1
+    for i in UniqueSet(cardsInfo):
+        for j in i:
+            if j not in allsets:
+                allsets.append(j)
+    return allsets
+
 #Gets only the spesifc traits of the monster usful for the dual
 def ClearSet(mycards):
     item = []
@@ -247,49 +209,8 @@ def ClearSet(mycards):
         num = num + 1
     return item
 
-#Default value to false to obtain all cards info for dual if set to true archetype will not be on the list
-def MonsterInfo(set, archetype = False):
-    cardSet = []
-    if archetype:
-        cardSet = ['ygoprodeck_url', 'card_sets', 'card_images', 'card_prices', 'banlist_info', 'archetype']
-    else:
-        cardSet = ['ygoprodeck_url', 'card_sets', 'card_images', 'card_prices', 'banlist_info']
-    monseterInfo = []
-    for i in CardDesc(set):
-        if i not in cardSet:
-            monseterInfo.append(i)
-    return monseterInfo
-
-def Save(data):
-    my_json_path = os.path.join(
-        #os.path.dirname(__file__), "c:\\Users\\crist\\OneDrive\\Desktop\\Large data\\Yu-Gi_Oh.json"
-        os.path.dirname(__file__), "Yu-Gi_Oh.json"
-    )
-
-    with open(my_json_path, "w") as f:
-        json.dump(data, f)
-
-#Get all cards Info other wise this program won't work
-def Api():
-    try:
-        api = requests.get("https://db.ygoprodeck.com/api/v7/cardinfo.php")
-        print(api.status_code)
-        myapi = json.loads(api.content)
-        Save(myapi)
-        print(myapi['data'][0]['id'])
-
-    except Exception as e:
-        return("Error..")
-
-def MyFile():
-    my_json_path = os.path.join(
-        #os.path.dirname(__file__), "c:\\Users\\crist\\OneDrive\\Desktop\\Large data\\Yu-Gi_Oh.json"
-        os.path.dirname(__file__), "Yu-Gi_Oh.json"
-    )
-
-    with open(my_json_path) as f:
-        d = json.load(f)
-        return d
+def Convert(list):
+    return tuple(i for i in list)
 
 #ensures that two set of list or dictionaries are the same
 def Dect_Equal(list1, list2):
@@ -305,6 +226,103 @@ def Dect_Equal(list1, list2):
         else:
             return False
     return same
+
+#split the set_code to three indevidual componets of set, region, and number of the card in the set
+def ExpendSetCode(setCode):
+    set = setCode.split('-')
+    region = ""
+    num = ""
+    if len(set) > 1:
+        for i in set[1]:
+            if i.isdigit():
+                num = num + i
+            else:
+                region = region + i
+        set.pop(1)
+    set.append(region)
+    set.append(num)
+    return set
+
+#get the values froma the dictionary
+def GetTuple(myDict, myList):
+    toTuple = []
+
+    for i in myList:
+        toTuple.append(myDict[i])
+    return Convert(toTuple)
+
+def LinkMarkerDirection(myCard):
+    direction = ''
+    n = 0
+    if 'linkmarkers' in myCard:
+        for i in myCard['linkmarkers']:
+            if n == 0:
+                direction = i
+                n = 1
+            else:
+                direction = direction + "," + i
+    myCard['linkmarkers'] = direction
+    return myCard
+
+#Default value to false to obtain all cards info for dual if set to true archetype will not be on the list
+def MonsterInfo(set, archetype = False):
+    cardSet = []
+    if archetype:
+        cardSet = ['ygoprodeck_url', 'card_sets', 'card_images', 'card_prices', 'banlist_info', 'archetype']
+    else:
+        cardSet = ['ygoprodeck_url', 'card_sets', 'card_images', 'card_prices', 'banlist_info']
+    monseterInfo = []
+    for i in CardDesc(set):
+        if i not in cardSet:
+            monseterInfo.append(i)
+    return monseterInfo
+
+def MyFile():
+    my_json_path = os.path.join(
+        #os.path.dirname(__file__), "c:\\Users\\crist\\OneDrive\\Desktop\\Large data\\Yu-Gi_Oh.json"
+        os.path.dirname(__file__), "Yu-Gi_Oh.json"
+    )
+
+    with open(my_json_path) as f:
+        d = json.load(f)
+        return d
+
+def Save(data):
+    my_json_path = os.path.join(
+        # os.path.dirname(__file__), "c:\\Users\\crist\\OneDrive\\Desktop\\Large data\\Yu-Gi_Oh.json"
+        os.path.dirname(__file__), "Yu-Gi_Oh.json"
+    )
+
+    with open(my_json_path, "w") as f:
+        json.dump(data, f)
+
+#upload every card to file only once including the new cards that are not in the current list
+#Order does matter
+def SaveImages(myCards):
+    length = 0
+    fileSize = len(glob.glob('images\\*.jpg'))
+    while length < len(myCards) - fileSize:
+        urllib.request.urlretrieve(myCards[length + fileSize]['card_images'][0]['image_url'], 'images\\' + str(myCards[length + fileSize]['card_images'][0]['id']) + '.jpg')
+        length += 1
+        time.sleep(50/1000)
+
+def ReDefine(elements):
+    for i in elements:
+        if i == 'desc':
+            elements[elements.index(i)] = 'description'
+    return elements
+
+def RenameCollumn(index, info, cardInfo):
+    values = [''] * len(info)
+    cardInfo[index] = LinkMarkerDirection(cardInfo[index])
+    for i in cardInfo[index]:
+        for j in info:
+            if j == 'description':
+                values[info.index(j)] = cardInfo[index]['desc']
+            if j in cardInfo[index]:
+                values[info.index(j)] = cardInfo[index][j]
+    values.append(False)
+    return values
 
 #removes every duplicate from the list
 def UniqueSet(cardsInfo):
@@ -327,15 +345,11 @@ def UniqueSet(cardsInfo):
 
     return myset
 
-#Get every main unique key from the Json file
-def CardDesc(cardsInfo):
-    allsets= []
-    n = 1
-    for i in UniqueSet(cardsInfo):
-        for j in i:
-            if j not in allsets:
-                allsets.append(j)
-    return allsets
+def ZeroToEmpty(num):
+    if num == '0':
+        return ""
+    else:
+        return num
 
 if __name__ == "__main__":
     main()
