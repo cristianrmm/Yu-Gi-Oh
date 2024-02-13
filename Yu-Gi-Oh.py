@@ -3,35 +3,120 @@ import json
 import os
 import time
 import mysql.connector
-import datetime
 import urllib
 import glob
-
+from tkinter import *
+from tkinter import ttk
+from PIL import ImageTk, Image
 
 def main():
+
     myCards = MyFile()['data']
 
-    allSets = AllCardSets(myCards)
-    DB_Access(myCards, allSets)
-    SaveImages(myCards)
-
-
-# access my Main Database
-def DB_Access(myCards, allSets):
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
         passwd='',
         database='yu_gi_oh'
     )
-    #create the tables if they don't exist
+
+    allSets = AllCardSets(myCards)
+    DB_Access(myDB, myCards, allSets)
+    SaveImages(myCards)
+    Main_Window(myDB)
+    myDB.close()
+
+def Main_Window(myDB):
+    root = Tk()
+    root.attributes('-fullscreen', True)
+    cardId = DB_GetCardInfo(myDB)
+
+    #Display all card Info for the user from Treeview
+    index = 0
+    num = 0
+    images = []
+    name_Label = []
+    des_Label = []
+    type_Label = []
+    label = [name_Label, des_Label, type_Label]
+    for i in cardId:
+        images.append(ImageTk.PhotoImage(Image.open("images\\" + str(cardId[i[4] - 1][0]) + ".jpg").resize((271, 395))))
+        num += 1
+        if num > 99:
+            break
+    my_Label = Label(root, image = images[0])
+    my_Label.grid(row=0, column= 0, rowspan=3, sticky=W)
+
+    name_Label.append(Label(root, text="Name: \n" + str(cardId[index][1]), justify="left"))
+    name_Label[0].grid(row=0, column=1, sticky=W)
+
+    des_Label.append(Label(root, text="Description: \n"  + str(cardId[index][2]), justify="left", wraplength=1000))
+    des_Label[0].grid(row=1, column=1, sticky=W)
+
+    type_Label.append(Label(root, text="Card Type: \n" + str(cardId[index][3]), justify="left"))
+    type_Label[0].grid(row=2, column=1, sticky=W)
+
+    #seting up a look up table
+    my_tree = ttk.Treeview(root)
+    my_tree['columns'] = ('id', 'name')
+    my_tree.column('#0', stretch=NO)
+    my_tree.column('id', anchor=W)
+    my_tree.column('name', anchor=CENTER)
+
+    my_tree.heading('#0', text='', anchor=W)
+    my_tree.heading('id', text='id', anchor=W)
+    my_tree.heading('name', text='name', anchor=CENTER)
+
+    count = 0
+    for item in cardId:
+        my_tree.insert(parent='', index='end', iid=count, text=str(count), values=(str(item[0]), str(item[1])))
+        count += 1
+        if count > 99:
+            break
+    my_tree.grid(row=4, column=0, columnspan=2, sticky=W)
+    my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, root, images, my_tree, cardId))
+
+    root.bind('<Escape>', lambda Event: Quit(root))
+    root.mainloop()
+
+def SelectItem(Event, label, root, images, myTree, cardId):
+    label[0][0].destroy()
+    label[1][0].destroy()
+    label[2][0].destroy()
+    item = myTree.identify('item', Event.x, Event.y)
+    index = int(myTree.item(item)['text'])
+
+    # Display all card Info for the user from Treeview
+    my_Label = Label(root, image=images[int(myTree.item(item)['text'])])
+    my_Label.grid(row=0, column=0, rowspan=3, sticky=W)
+
+    label[0][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
+    label[0][0].grid(row=0, column=1, sticky=W)
+
+    label[1][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
+    label[1][0].grid(row=1, column=1, sticky=W)
+
+    label[2][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
+    label[2][0].grid(row=2, column=1, sticky=W)
+
+
+def DB_GetCardInfo(myDB):
+    myCursor = myDB.cursor()
+    myCursor.execute("SELECT id, name, description, frameType, card_index FROM cards")
+    return myCursor.fetchall()
+
+def Quit(root):
+    root.destroy()
+
+# access my Main Database
+def DB_Access(myDB, myCards, allSets):
+    # create the tables if they don't exist
     DB_CreateTabelSets(myDB, myCards)
     DB_CreateTableItems(myDB, MonsterInfo(myCards))
 
-    #insert every element into the tables
+    # insert every element into the tables
     DB_InsertCard(myDB, MonsterInfo(myCards), myCards, len(myCards))
     DB_InsertCardSet(myDB, allSets, len(allSets))
-    myDB.close()
 
 def DB_InsertCardSet(myDB, allSets, qty):
     setOrder = ['id', 'set_name', 'card_set', 'region', 'num', 'set_rarity', 'set_rarity_code', 'set_price']
