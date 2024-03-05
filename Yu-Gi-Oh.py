@@ -1,5 +1,4 @@
 import math
-
 import requests
 import json
 import os
@@ -38,37 +37,46 @@ def Main_Window(myDB):
     name_Label = []
     des_Label = []
     type_Label = []
-    label = [name_Label, des_Label, type_Label]
+    my_Label = []
+    label = [my_Label, name_Label, des_Label, type_Label]
 
     f = Filter(myDB)
 
-    num = 0
-    location = sampleSize * cardSet[0] + num
-    while location < sampleSize * (cardSet[0] + 1) - 1 and location < len(cardId):
-        location = sampleSize * cardSet[0] + num
-        images.append(ImageTk.PhotoImage(Image.open("images\\" + str(cardId[location][0]) + ".jpg").resize((271, 395))))
-        num += 1
-    my_Label = Label(root, image = images[0])
-    my_Label.grid(row=0, column= 0, rowspan=3, sticky=W)
+    images = [(ImageTk.PhotoImage(Image.open("images\\" + str(cardId[0][0]) + ".jpg").resize((271, 395))))]
 
-    name_Label.append(Label(root, text="Name: \n" + str(cardId[sampleSize * cardSet[0]][1]), justify="left"))
+    mainFrame = LabelFrame(root, text="main")
+    selection = LabelFrame(root, text="slection")
+    selection.grid(row=0, column=0, sticky=N)
+    mainFrame.grid(row=0, column=1)
+    my_Label.append(Label(mainFrame, image = images[0]))
+    my_Label[0].grid(row=0, column= 0, rowspan=3, sticky=W)
+
+    name_Label.append(Label(mainFrame, text="Name: \n" + str(cardId[sampleSize * cardSet[0]][1]), justify="left"))
     name_Label[0].grid(row=0, column=1, sticky=W)
 
-    des_Label.append(Label(root, text="Description: \n"  + str(cardId[sampleSize * cardSet[0]][2]), justify="left", wraplength=1000))
+    des_Label.append(Label(mainFrame, text="Description: \n"  + str(cardId[sampleSize * cardSet[0]][2]), justify="left", wraplength=1000))
     des_Label[0].grid(row=1, column=1, sticky=W)
 
-    type_Label.append(Label(root, text="Card Type: \n" + str(cardId[sampleSize * cardSet[0]][3]), justify="left"))
+    type_Label.append(Label(mainFrame, text="Card Type: \n" + str(cardId[sampleSize * cardSet[0]][3]), justify="left"))
     type_Label[0].grid(row=2, column=1, sticky=W)
 
-    item = StringVar()
-    frameType = ttk.Combobox(root, textvariable=item)
+
+    frameType = ttk.Combobox(selection)
+    archeType = ttk.Combobox(selection)
+    raceType = ttk.Combobox(selection)
+    levelType = ttk.Combobox(selection)
     frameType['values'] = f.FrameType()
+    archeType['values'] = f.ArcheType()
+    raceType['values'] = f.RaceType()
+    levelType['values'] = f.Level()
     frameType.current(0)
+    archeType.current(0)
+    raceType.current(0)
+    levelType.current(0)
 
-
-    fr = Frame(root)
+    table = Frame(mainFrame)
     #seting up a look up table
-    my_tree = ttk.Treeview(fr)
+    my_tree = ttk.Treeview(table)
     my_tree['columns'] = ('id', 'name')
     my_tree.column('#0', stretch=NO)
     my_tree.column('id', anchor=W)
@@ -80,19 +88,20 @@ def Main_Window(myDB):
 
     count = 0
     location = sampleSize * cardSet[0] + count
-    while location < sampleSize * (cardSet[0] + 1) - 1 and location < len(cardId):
-        location = sampleSize * cardSet[0] + count
+    while location < sampleSize * (cardSet[0] + 1) and location < len(cardId):
         my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
+        location = sampleSize * cardSet[0] + count
 
+    previousSet = Button(table, text='<', command=lambda: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), state=DISABLED)
+    imageSet = Label(table, text=str(cardSet[0])+ ':' + str(math.floor(len(cardId) / sampleSize)))
+    nextSet = Button(table, text='>', command=lambda: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
 
-    previousSet = Button(fr, text='<', command=lambda: NextSet('-', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), state=DISABLED)
-    imageSet = Label(fr, text=str(cardSet[0])+ ':' + str(math.floor(len(cardId) / sampleSize)))
-    nextSet = Button(fr, text='>', command=lambda: NextSet('+', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
-
-    frameType.grid(row=4, column=0)
-    frameType.current()
-    fr.grid(row=5, column=0, columnspan=2, sticky=W)
+    frameType.grid(row=0, column=0, sticky=N)
+    archeType.grid(row=1, column=0, sticky=N)
+    raceType.grid(row=2, column=0, sticky=N)
+    levelType.grid(row=3, column=0, sticky=N)
+    table.grid(row=5, column=0, columnspan=2, sticky=W)
     my_tree.grid(row=0, column=0, columnspan=3)
     previousSet.grid(row=1, column=0, sticky=W)
     imageSet.grid(row=1, column=1)
@@ -100,46 +109,68 @@ def Main_Window(myDB):
     nextSet.grid(row=1, column=2, sticky=E)
 
     initialSet = [sampleSize * cardSet[0]]
-    frameType.bind('<<ComboboxSelected>>', lambda Event: Select(frameType, f, root, label, my_tree, sampleSize, cardId, cardSet, images, initialSet))
-    my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, root, images, my_tree, cardId, initialSet))
-    #nextSet.bind('<Button-1>', lambda Event: NextSet('+', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet))
-    #previousSet.bind('<Button-1>', lambda Event: NextSet('-', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet))
+    frameType.bind('<<ComboboxSelected>>', lambda Event: Select(frameType, f, 'frame', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    archeType.bind('<<ComboboxSelected>>', lambda Event: Select(archeType, f, 'arche', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    raceType.bind('<<ComboboxSelected>>', lambda Event: Select(raceType, f, 'race', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    levelType.bind('<<ComboboxSelected>>', lambda Event: Select(levelType, f, 'level', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, mainFrame, images, my_tree, cardId, initialSet))
     root.bind('<Escape>', lambda Event: Quit(root))
     root.mainloop()
 
-def Select(frameType, f, root, label, my_tree, sampleSize, cardId, cardSet, images, initialSet):
-    images.clear()
+def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, ps, ns, initialSet):
     cardId.clear()
     label[0][0].destroy()
     label[1][0].destroy()
     label[2][0].destroy()
+    label[3][0].destroy()
     cardSet[0] = 0
+
     for i in my_tree.get_children():
         my_tree.delete(i)
 
-    for i in f.getAllFrameCards(frameType.get()):
-        cardId.append(i)
+    if cardtype == 'frame':
+        for i in f.getAllFrameCards(frameType.get()):
+            cardId.append(i)
+    elif cardtype == 'arche':
+        for i in f.getAllArchCards(frameType.get()):
+            cardId.append(i)
+    elif cardtype == 'race':
+        for i in f.getAllRaceCards(frameType.get()):
+            cardId.append(i)
+    elif cardtype == 'level':
+        for i in f.getAllLevelCards(frameType.get()):
+            cardId.append(i)
+
+    imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
+
+    ps['state'] = DISABLED
+    if (math.floor(len(cardId)  / sampleSize) == 0):
+        ns['state'] = DISABLED
+    else:
+        ns['state'] = ACTIVE
+
     count = 0
     location = sampleSize * cardSet[0] + count
-    while location < sampleSize * (cardSet[0] + 1) - 1 and location < len(cardId) - 1:
-        location = sampleSize * cardSet[0] + count
-        images.append(ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[location][0]) + '.jpg').resize((271, 395))))
+    while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1:
         my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
+        location = sampleSize * cardSet[0] + count
     initialSet = sampleSize * cardSet[0]
-    
-    my_Label = Label(root, image = images[0])
-    my_Label.grid(row=0, column= 0, rowspan=3, sticky=W)
+
+    images[0] = ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[0][0]) + '.jpg').resize((271, 395)))
+
+    label[0][0] = Label(root, image = images[0])
+    label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
 
     index = sampleSize * cardSet[0]
-    label[0][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
-    label[0][0].grid(row=0, column=1, columnspan=3, sticky=W)
+    label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
+    label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
 
-    label[1][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
-    label[1][0].grid(row=1, column=1, columnspan=3, sticky=W)
+    label[2][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
+    label[2][0].grid(row=1, column=1, columnspan=3, sticky=W)
 
-    label[2][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
-    label[2][0].grid(row=2, column=1, columnspan=3, sticky=W)
+    label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
+    label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
 
 
 def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet):
@@ -147,10 +178,15 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
     label[0][0].destroy()
     label[1][0].destroy()
     label[2][0].destroy()
+    label[3][0].destroy()
 
     if nexstep == '+':
         cardSet[0] = cardSet[0] + 1
         imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
+
+        if (cardSet[0]) == math.floor(len(cardId) / sampleSize):
+            ns['state'] = DISABLED
+
         ps['state'] = ACTIVE
     elif nexstep == '-':
         cardSet[0] = cardSet[0] - 1
@@ -158,58 +194,58 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
         ns['state'] = ACTIVE
         if cardSet[0] == 0:
             ps['state'] = DISABLED
-    num = 0
-    location = sampleSize * cardSet[0] + num
-    while location < sampleSize * (cardSet[0] + 1) - 1 and location < len(cardId) - 1:
-        if location == len(cardId) - 2:
-            ns['state'] = DISABLED
-        location = sampleSize * cardSet[0] + num
-        images.append(ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[location][0]) + '.jpg').resize((271, 395))))
-        num += 1
+
+        if (cardSet[0] < math.floor(len(cardId) / sampleSize)):
+            ns['state'] = ACTIVE
 
     for i in my_tree.get_children():
         my_tree.delete(i)
 
     count = 0
     location = sampleSize * cardSet[0] + count
-    while location < sampleSize * (cardSet[0] + 1) - 1 and location < len(cardId) - 1:
-        location = sampleSize * cardSet[0] + count
+    images.append(ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[location][0]) + '.jpg').resize((271, 395))))
+    while location < sampleSize * (cardSet[0] + 1) and location < len(cardId):
         my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
+        location = sampleSize * cardSet[0] + count
     initialSet[0] = sampleSize * cardSet[0]
 
-    my_Label = Label(root, image = images[0])
-    my_Label.grid(row=0, column= 0, rowspan=3, sticky=W)
+    label[0][0] = Label(root, image = images[0])
+    label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
 
     index = sampleSize * cardSet[0]
-    label[0][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
-    label[0][0].grid(row=0, column=1, columnspan=3, sticky=W)
+    label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
+    label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
 
-    label[1][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
-    label[1][0].grid(row=1, column=1, columnspan=3, sticky=W)
+    label[2][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
+    label[2][0].grid(row=1, column=1, columnspan=3, sticky=W)
 
-    label[2][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
-    label[2][0].grid(row=2, column=1, columnspan=3, sticky=W)
+    label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
+    label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
 
 def SelectItem(Event, label, root, images, myTree, cardId, initialSet):
-    label[0][0].destroy()
-    label[1][0].destroy()
-    label[2][0].destroy()
     item = myTree.identify('item', Event.x, Event.y)
-    index = int(myTree.item(item)['text'])
+    if(len(myTree.item(item)['values']) != 0):
+        label[0][0].destroy()
+        label[1][0].destroy()
+        label[2][0].destroy()
+        label[3][0].destroy()
 
-    # Display all card Info for the user from Treeview
-    my_Label = Label(root, image=images[int(myTree.item(item)['text']) - initialSet[0]])
-    my_Label.grid(row=0, column=0, rowspan=3, sticky=W)
+        images[0] = ImageTk.PhotoImage(Image.open("images\\" + str(myTree.item(item)['values'][0]) + ".jpg").resize((271, 395)))
+        index = int(myTree.item(item)['text'])
 
-    label[0][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
-    label[0][0].grid(row=0, column=1, columnspan=3, sticky=W)
+        # Display all card Info for the user from Treeview
+        label[0][0] = Label(root, image=images[0])
+        label[0][0].grid(row=0, column=0, rowspan=3, sticky=W)
 
-    label[1][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
-    label[1][0].grid(row=1, column=1, columnspan=3, sticky=W)
+        label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
+        label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
 
-    label[2][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
-    label[2][0].grid(row=2, column=1, columnspan=3, sticky=W)
+        label[2][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
+        label[2][0].grid(row=1, column=1, columnspan=3, sticky=W)
+
+        label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
+        label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
 
 
 def DB_GetCardInfo(myDB):
