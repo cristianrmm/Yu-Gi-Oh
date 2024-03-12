@@ -1,4 +1,6 @@
 import math
+import tkinter.messagebox
+
 import requests
 import json
 import os
@@ -118,28 +120,27 @@ def Main_Window(myDB):
     root.mainloop()
 
 def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, ps, ns, initialSet):
-    cardId.clear()
-    label[0][0].destroy()
-    label[1][0].destroy()
-    label[2][0].destroy()
-    label[3][0].destroy()
+
     cardSet[0] = 0
 
     for i in my_tree.get_children():
         my_tree.delete(i)
 
     if cardtype == 'frame':
-        for i in f.getAllFrameCards(frameType.get()):
-            cardId.append(i)
+        f.GetFrame(frameType.get())
     elif cardtype == 'arche':
-        for i in f.getAllArchCards(frameType.get()):
-            cardId.append(i)
+        f.GetArchType(frameType.get())
     elif cardtype == 'race':
-        for i in f.getAllRaceCards(frameType.get()):
-            cardId.append(i)
+        f.GetRace(frameType.get())
     elif cardtype == 'level':
-        for i in f.getAllLevelCards(frameType.get()):
+        f.GetLevel(frameType.get())
+
+    if (len(f.GetAllCards()) > 0):
+        cardId.clear()
+        for i in f.GetAllCards():
             cardId.append(i)
+    else:
+        tkinter.messagebox.showwarning(title='No Cards', message='No match found')
 
     imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
 
@@ -158,6 +159,11 @@ def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, car
     initialSet = sampleSize * cardSet[0]
 
     images[0] = ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[0][0]) + '.jpg').resize((271, 395)))
+
+    label[0][0].destroy()
+    label[1][0].destroy()
+    label[2][0].destroy()
+    label[3][0].destroy()
 
     label[0][0] = Label(root, image = images[0])
     label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
