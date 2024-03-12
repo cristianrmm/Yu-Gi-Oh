@@ -1,75 +1,107 @@
 class Filter():
     def __init__(self, myDB):
+        self.frame = 'all'
+        self.archType = 'all'
+        self.race = 'all'
+        self.level = 'all'
+        self.getMyCards = ['all', 'all', 'all', 'all']
         self.mydb = myDB
 
     def FrameType(self):
-        frame = self.mydb.cursor()
-        frame.execute("SELECT frameType FROM cards")
+        cardFrame = self.mydb.cursor()
+        cardFrame.execute("SELECT frameType FROM cards")
         set = ['all']
-        for i in self.UniqueSet(frame.fetchall()):
+        for i in self.UniqueSet(cardFrame.fetchall()):
             set.append(i[0])
         return set
 
     def RaceType(self):
-        frame = self.mydb.cursor()
-        frame.execute("SELECT race FROM cards WHERE frameType != 'skill' ORDER BY race")
+        cardFrame = self.mydb.cursor()
+        cardFrame.execute("SELECT race FROM cards WHERE frameType != 'skill' ORDER BY race")
         set = ['all']
-        for i in self.UniqueSet(frame.fetchall()):
+        for i in self.UniqueSet(cardFrame.fetchall()):
             set.append(i[0])
         return set
 
     def Level(self):
-        frame = self.mydb.cursor()
-        frame.execute("SELECT level FROM cards WHERE level > '0' ORDER BY CAST(level AS SIGNED INTEGER)")
+        cardFrame = self.mydb.cursor()
+        cardFrame.execute("SELECT level FROM cards WHERE level > '0' ORDER BY CAST(level AS SIGNED INTEGER)")
         set = ['all']
-        for i in self.UniqueSet(frame.fetchall()):
+        for i in self.UniqueSet(cardFrame.fetchall()):
             set.append(i[0])
         return set
 
-
     def ArcheType(self):
-        frame = self.mydb.cursor()
-        frame.execute("SELECT archetype FROM cards ORDER BY archetype")
+        cardFrame = self.mydb.cursor()
+        cardFrame.execute("SELECT archetype FROM cards ORDER BY archetype")
         set = ['all']
-        for i in self.UniqueSet(frame.fetchall()):
+        for i in self.UniqueSet(cardFrame.fetchall()):
             if i[0] == "":
                 set.append('undefined')
             else:
                 set.append(i[0])
         return set
 
-    def getAllFrameCards(self, frame):
-        card = self.mydb.cursor()
-        if frame == 'all':
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards")
-        else:
-            card.execute("SELECT id, name, description, frametype, card_index FROM cards WHERE frameType LIKE '" + frame +"'")
-        return card.fetchall()
+    def GetFrame(self, frame):
+        self.frame = frame
 
-    def getAllRaceCards(self, race):
-        card = self.mydb.cursor()
-        if race == 'all':
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards")
-        else:
-            card.execute("SELECT id, name, description, frametype, card_index FROM cards WHERE race LIKE '" + race +"'")
-        return card.fetchall()
+    def GetArchType(self, archType):
+        self.archType = archType
 
-    def getAllLevelCards(self, level):
-        card = self.mydb.cursor()
-        if level == 'all':
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards")
-        else:
-            card.execute("SELECT id, name, description, frametype, card_index FROM cards WHERE level LIKE '" + level +"'")
-        return card.fetchall()
+    def GetRace(self, race):
+        self.race = race
 
-    def getAllArchCards(self, archetype):
+    def GetLevel(self, level):
+        self.level = level
+
+    def GetAllCards(self):
         card = self.mydb.cursor()
-        if archetype == 'all':
+        frame = ''
+        archType = ''
+        race = ''
+        level = ''
+        myset = ''
+
+        set = []
+        if (self.frame != 'all'):
+            frame = "frameType LIKE '" + self.frame + "'"
+            set.append(frame)
+        if (self.archType != 'all' and self.archType != 'undefined'):
+            archType = "archeType LIKE (%s)"
+            set.append(archType)
+        elif(self.archType == 'undefined'):
+            archType = "archeType LIKE ''"
+            set.append(archType)
+        if (self.race != 'all'):
+            race = "race LIKE '" + self.race + "'"
+            set.append(race)
+        if (self.level != 'all'):
+            level = "level LIKE '" + self.level + "'"
+            set.append(level)
+
+        self.getMyCards[0] = frame
+        self.getMyCards[1] = archType
+        self.getMyCards[2] = race
+        self.getMyCards[3] = level
+
+        if len(self.getMyCards) > 1:
+            n = 0
+            for i in self.getMyCards:
+                if len(i) > 0 and n == 0:
+                    myset = myset + str(i)
+                    n = n + 1
+                elif len(i) != 0 and n != 0:
+                    myset = myset + " AND " + str(i)
+
+        if (self.frame == 'all' and self.archType == 'all' and self.race == 'all' and self.level == 'all'):
             card.execute("SELECT id, name, description, frameType, card_index FROM cards")
-        elif (archetype == 'undefined'):
-            card.execute("SELECT id, name, description, frametype, card_index FROM cards WHERE archetype LIKE ''")
+        elif (self.archType == 'all'):
+            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset)
+        elif (self.archType == 'undefined'):
+            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset)
         else:
-            card.execute("SELECT id, name, description, frametype, card_index FROM cards WHERE archetype LIKE (%s)",  (archetype,))
+            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset, (self.archType,))
+
         return card.fetchall()
 
     def UniqueSet(self, cardsInfo):
