@@ -63,18 +63,32 @@ def Main_Window(myDB):
     type_Label[0].grid(row=2, column=1, sticky=W)
 
 
+    frameLabel = Label(selection, text='Frame')
     frameType = ttk.Combobox(selection)
+    archeLabel = Label(selection, text='Archetype')
     archeType = ttk.Combobox(selection)
+    raceLabel = Label(selection, text='Race')
     raceType = ttk.Combobox(selection)
+    levelLabel = Label(selection, text='Level')
     levelType = ttk.Combobox(selection)
+    attributeLabel = Label(selection, text='Attribute')
+    attribute = ttk.Combobox(selection)
+    attackLable = Label(selection, text='Attack')
+    attack = ttk.Combobox(selection)
+    defenseLabel = Label(selection, text='Defense')
+    defense = ttk.Combobox(selection)
     frameType['values'] = f.FrameType()
     archeType['values'] = f.ArcheType()
     raceType['values'] = f.RaceType()
     levelType['values'] = f.Level()
+    attribute['values'] = f.Attribute()
+    attack['values'] = f.Attack()
     frameType.current(0)
     archeType.current(0)
     raceType.current(0)
     levelType.current(0)
+    attribute.current(0)
+    attack.current(0)
 
     table = Frame(mainFrame)
     #seting up a look up table
@@ -99,10 +113,21 @@ def Main_Window(myDB):
     imageSet = Label(table, text=str(cardSet[0])+ ':' + str(math.floor(len(cardId) / sampleSize)))
     nextSet = Button(table, text='>', command=lambda: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
 
-    frameType.grid(row=0, column=0, sticky=N)
-    archeType.grid(row=1, column=0, sticky=N)
-    raceType.grid(row=2, column=0, sticky=N)
-    levelType.grid(row=3, column=0, sticky=N)
+    frameLabel.grid(row=0, column=0, sticky=NW)
+    frameType.grid(row=1, column=0, sticky=N)
+    archeLabel.grid(row=2, column=0, sticky=NW)
+    archeType.grid(row=3, column=0, sticky=N)
+    raceLabel.grid(row=4, column=0, sticky=NW)
+    raceType.grid(row=5, column=0, sticky=N)
+    levelLabel.grid(row=6, column=0, sticky=NW)
+    levelType.grid(row=7, column=0, sticky=N)
+    attributeLabel.grid(row=8, column=0, sticky=NW)
+    attribute.grid(row=9, column=0, sticky=N)
+    attackLable.grid(row=10, column=0, sticky=NW)
+    attack.grid(row=11, column=0, sticky=NW)
+    defenseLabel.grid(row=12, column=0, sticky=NW)
+    defense.grid(row=13, column=0, sticky=NW)
+
     table.grid(row=5, column=0, columnspan=2, sticky=W)
     my_tree.grid(row=0, column=0, columnspan=3)
     previousSet.grid(row=1, column=0, sticky=W)
@@ -115,6 +140,8 @@ def Main_Window(myDB):
     archeType.bind('<<ComboboxSelected>>', lambda Event: Select(archeType, f, 'arche', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
     raceType.bind('<<ComboboxSelected>>', lambda Event: Select(raceType, f, 'race', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
     levelType.bind('<<ComboboxSelected>>', lambda Event: Select(levelType, f, 'level', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    attribute.bind('<<ComboboxSelected>>', lambda Event: Select(attribute, f, 'attribute', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+    attack.bind('<<ComboboxSelected>>', lambda Event: Select(attack, f, 'attack', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
     my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, mainFrame, images, my_tree, cardId, initialSet))
     root.bind('<Escape>', lambda Event: Quit(root))
     root.mainloop()
@@ -122,25 +149,22 @@ def Main_Window(myDB):
 def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, ps, ns, initialSet):
 
     cardSet[0] = 0
+    treePass = True
 
-    for i in my_tree.get_children():
-        my_tree.delete(i)
-
-    if cardtype == 'frame':
-        f.GetFrame(frameType.get())
-    elif cardtype == 'arche':
-        f.GetArchType(frameType.get())
-    elif cardtype == 'race':
-        f.GetRace(frameType.get())
-    elif cardtype == 'level':
-        f.GetLevel(frameType.get())
+    f.GetCardInfo(cardtype, frameType.get())
 
     if (len(f.GetAllCards()) > 0):
+        for i in my_tree.get_children():
+            my_tree.delete(i)
         cardId.clear()
         for i in f.GetAllCards():
             cardId.append(i)
+        f.SetPrevious(cardtype, frameType.current(), frameType.get())
+        treePass = True
     else:
+        frameType.current(f.GetPrevious(cardtype, frameType.get()))
         tkinter.messagebox.showwarning(title='No Cards', message='No match found')
+        treePass = False
 
     imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
 
@@ -152,7 +176,8 @@ def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, car
 
     count = 0
     location = sampleSize * cardSet[0] + count
-    while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1:
+    while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1 and len(f.GetAllCards()) > 0 and treePass:
+        treePass = True
         my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
         location = sampleSize * cardSet[0] + count
