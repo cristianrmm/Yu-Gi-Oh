@@ -44,6 +44,21 @@ def Main_Window(myDB):
 
     f = Filter(myDB)
 
+    options = Menu(root)
+    root.config(menu=options)
+    fileMenu = Menu(options)
+    options.add_cascade(label='File', menu=fileMenu)
+    fileMenu.add_command(label='New')
+    fileMenu.add_command(label='Open..')
+    fileMenu.add_command(label='Save')
+    fileMenu.add_separator()
+    fileMenu.add_command(label='Exit', command=root.quit)
+    helpmenue = Menu(options)
+    options.add_cascade(label='Help', menu=helpmenue)
+    helpmenue.add_command(label='About')
+
+
+
     images = [(ImageTk.PhotoImage(Image.open("images\\" + str(cardId[0][0]) + ".jpg").resize((271, 395))))]
 
     mainFrame = LabelFrame(root, text="main")
@@ -83,24 +98,37 @@ def Main_Window(myDB):
     levelType['values'] = f.Level()
     attribute['values'] = f.Attribute()
     attack['values'] = f.Attack()
+    defense['values'] = f.Defense()
     frameType.current(0)
     archeType.current(0)
     raceType.current(0)
     levelType.current(0)
     attribute.current(0)
     attack.current(0)
+    defense.current(0)
 
     table = Frame(mainFrame)
     #seting up a look up table
     my_tree = ttk.Treeview(table)
     my_tree['columns'] = ('id', 'name')
-    my_tree.column('#0', stretch=NO)
+    my_tree.column('#0')
     my_tree.column('id', anchor=W)
     my_tree.column('name', anchor=CENTER)
 
     my_tree.heading('#0', text='', anchor=W)
     my_tree.heading('id', text='id', anchor=W)
     my_tree.heading('name', text='name', anchor=CENTER)
+
+    deck = LabelFrame(table, text='deck')
+    deckNPC = ttk.Treeview(deck)
+    deckNPC['columns'] = ('id', 'name')
+    deckNPC.column('#0', width=0, stretch=NO)
+    deckNPC.column('id', anchor=CENTER)
+    deckNPC.column('name', anchor=CENTER)
+
+    deckNPC.heading('#0')
+    deckNPC.heading('id', text='ID')
+    deckNPC.heading('name', text='Name')
 
     count = 0
     location = sampleSize * cardSet[0] + count
@@ -109,9 +137,10 @@ def Main_Window(myDB):
         count += 1
         location = sampleSize * cardSet[0] + count
 
-    previousSet = Button(table, text='<', command=lambda: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), state=DISABLED)
+    previousSet = Button(table, text='<', state=DISABLED)
     imageSet = Label(table, text=str(cardSet[0])+ ':' + str(math.floor(len(cardId) / sampleSize)))
-    nextSet = Button(table, text='>', command=lambda: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
+    nextSet = Button(table, text='>')
+    addCard = Button(table, text='Add')
 
     frameLabel.grid(row=0, column=0, sticky=NW)
     frameType.grid(row=1, column=0, sticky=N)
@@ -128,61 +157,101 @@ def Main_Window(myDB):
     defenseLabel.grid(row=12, column=0, sticky=NW)
     defense.grid(row=13, column=0, sticky=NW)
 
-    table.grid(row=5, column=0, columnspan=2, sticky=W)
-    my_tree.grid(row=0, column=0, columnspan=3)
-    previousSet.grid(row=1, column=0, sticky=W)
-    imageSet.grid(row=1, column=1)
 
-    nextSet.grid(row=1, column=2, sticky=E)
+    table.grid(row=5, column=0, columnspan=2, sticky=W)
+    addCard.grid(row=0, column=0)
+    my_tree.grid(row=1, column=0, columnspan=3)
+    deck.grid(row=1, column=3, columnspan=2)
+    deckNPC.grid(row=0, column=0)
+    previousSet.grid(row=2, column=0, sticky=W)
+    imageSet.grid(row=2, column=1)
+
+    nextSet.grid(row=2, column=2, sticky=E)
 
     initialSet = [sampleSize * cardSet[0]]
-    frameType.bind('<<ComboboxSelected>>', lambda Event: Select(frameType, f, 'frame', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
-    archeType.bind('<<ComboboxSelected>>', lambda Event: Select(archeType, f, 'arche', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
-    raceType.bind('<<ComboboxSelected>>', lambda Event: Select(raceType, f, 'race', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
-    levelType.bind('<<ComboboxSelected>>', lambda Event: Select(levelType, f, 'level', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
-    attribute.bind('<<ComboboxSelected>>', lambda Event: Select(attribute, f, 'attribute', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
-    attack.bind('<<ComboboxSelected>>', lambda Event: Select(attack, f, 'attack', mainFrame, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, previousSet, nextSet, initialSet))
+
+    previousSet.bind('<Button-1>', lambda Event: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
+    previousSet.unbind('<Button-1>')
+    nextSet.bind('<Button-1>', lambda Event: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
+
+    treePass = [True]
+    frameType.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'frame', frameType, my_tree, cardId, treePass))
+    frameType.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    frameType.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    frameType.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    frameType.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    archeType.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'arche', archeType, my_tree, cardId, treePass))
+    archeType.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    archeType.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    archeType.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    archeType.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    raceType.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'race', raceType, my_tree, cardId, treePass))
+    raceType.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    raceType.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    raceType.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    raceType.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    levelType.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'level', levelType, my_tree, cardId, treePass))
+    levelType.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    levelType.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    levelType.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    levelType.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    attribute.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'attribute', attribute, my_tree, cardId, treePass))
+    attribute.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    attribute.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    attribute.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    attribute.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    attack.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'attack', attack, my_tree, cardId, treePass))
+    attack.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    attack.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    attack.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    attack.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
+    defense.bind('<<ComboboxSelected>>', lambda Event: DeleteTableSelection(f, 'defense', defense, my_tree, cardId, treePass))
+    defense.bind('<<ComboboxSelected>>', lambda Event: SetGoToZero(cardSet), add='+')
+    defense.bind('<<ComboboxSelected>>', lambda Event: SetTable(f, my_tree, sampleSize, cardId, cardSet, initialSet, treePass), add='+')
+    defense.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
+    defense.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
+
     my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, mainFrame, images, my_tree, cardId, initialSet))
     root.bind('<Escape>', lambda Event: Quit(root))
     root.mainloop()
 
-def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, cardSet, images, imageSet, ps, ns, initialSet):
-
-    cardSet[0] = 0
-    treePass = True
-
+def DeleteTableSelection(f, cardtype, frameType, myTree, cardId, treePass):
     f.GetCardInfo(cardtype, frameType.get())
+    allCards = f.GetAllCards()
 
-    if (len(f.GetAllCards()) > 0):
-        for i in my_tree.get_children():
-            my_tree.delete(i)
+    if (len(allCards) > 0):
+        for i in myTree.get_children():
+            myTree.delete(i)
         cardId.clear()
-        for i in f.GetAllCards():
+        for i in allCards:
             cardId.append(i)
         f.SetPrevious(cardtype, frameType.current(), frameType.get())
-        treePass = True
+        treePass[0] = True
     else:
         frameType.current(f.GetPrevious(cardtype, frameType.get()))
         tkinter.messagebox.showwarning(title='No Cards', message='No match found')
-        treePass = False
+        treePass[0] = False
 
-    imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
+def SetGoToZero(cardSet):
+    cardSet[0] = 0
 
-    ps['state'] = DISABLED
-    if (math.floor(len(cardId)  / sampleSize) == 0):
-        ns['state'] = DISABLED
-    else:
-        ns['state'] = ACTIVE
-
+def SetTable(f, myTree, sampleSize, cardId, cardSet, initialSet, treePass):
     count = 0
     location = sampleSize * cardSet[0] + count
-    while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1 and len(f.GetAllCards()) > 0 and treePass:
-        treePass = True
-        my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
+    allCards = f.GetAllCards()
+    while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1 and len(allCards) > 0 and treePass[0]:
+        myTree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
         location = sampleSize * cardSet[0] + count
-    initialSet = sampleSize * cardSet[0]
+    initialSet = [sampleSize * cardSet[0]]
 
+def ShowCard(root, label, images, cardId, cardSet, sampleSize):
     images[0] = ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[0][0]) + '.jpg').resize((271, 395)))
 
     label[0][0].destroy()
@@ -190,8 +259,8 @@ def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, car
     label[2][0].destroy()
     label[3][0].destroy()
 
-    label[0][0] = Label(root, image = images[0])
-    label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
+    label[0][0] = Label(root, image=images[0])
+    label[0][0].grid(row=0, column=0, rowspan=3, sticky=W)
 
     index = sampleSize * cardSet[0]
     label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
@@ -203,13 +272,21 @@ def Select(frameType, f, cardtype, root, label, my_tree, sampleSize, cardId, car
     label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
     label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
 
+def AcctiveButton(label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet):
+    ps['state'] = DISABLED
+    ps.unbind('<Button-1>')
+    if (math.floor(len(cardId)  / sampleSize) == 0):
+        ns['state'] = DISABLED
+        ns.unbind('<Button-1>')
+    else:
+        ns['state'] = NORMAL
+        ns.bind('<Button-1>', lambda Event: NextSet('+', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet))
+
+    imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
 
 def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet):
     images.clear()
-    label[0][0].destroy()
-    label[1][0].destroy()
-    label[2][0].destroy()
-    label[3][0].destroy()
+
 
     if nexstep == '+':
         cardSet[0] = cardSet[0] + 1
@@ -217,17 +294,22 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
 
         if (cardSet[0]) == math.floor(len(cardId) / sampleSize):
             ns['state'] = DISABLED
+            ns.unbind('<Button-1>')
 
-        ps['state'] = ACTIVE
+        ps['state'] = NORMAL
+        ps.bind('<Button-1>', lambda Event: NextSet('-', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet))
     elif nexstep == '-':
         cardSet[0] = cardSet[0] - 1
         imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
-        ns['state'] = ACTIVE
+        ns['state'] = NORMAL
+        ns.bind('<Button-1>', lambda Event: NextSet('+', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet))
         if cardSet[0] == 0:
             ps['state'] = DISABLED
+            ps.unbind('<Button-1>')
 
         if (cardSet[0] < math.floor(len(cardId) / sampleSize)):
-            ns['state'] = ACTIVE
+            ns['state'] = NORMAL
+            ns.bind('<Button-1>', lambda Event: NextSet('+', label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet))
 
     for i in my_tree.get_children():
         my_tree.delete(i)
@@ -239,7 +321,12 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
         my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
         count += 1
         location = sampleSize * cardSet[0] + count
-    initialSet[0] = sampleSize * cardSet[0]
+    initialSet = [sampleSize * cardSet[0]]
+
+    label[0][0].destroy()
+    label[1][0].destroy()
+    label[2][0].destroy()
+    label[3][0].destroy()
 
     label[0][0] = Label(root, image = images[0])
     label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
