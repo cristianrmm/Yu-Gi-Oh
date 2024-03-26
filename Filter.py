@@ -6,14 +6,16 @@ class Filter():
         self.indexLevel = 0
         self.indexAttribute = 0
         self.indexAttack = 0
+        self.indexDefense = 0
         self.frame = 'all'
         self.archeType = 'all'
         self.race = 'all'
         self.level = 'all'
         self.attribute = 'all'
         self.attack = 'all'
-        self.getMyCards = ['all', 'all', 'all', 'all', 'all', 'all']
-        self.getMyPreviousCards = ['all', 'all', 'all', 'all', 'all', 'all']
+        self.defense = 'all'
+        self.getMyCards = ['all', 'all', 'all', 'all', 'all', 'all', 'all']
+        self.getMyPreviousCards = ['all', 'all', 'all', 'all', 'all', 'all', 'all']
         self.mydb = myDB
 
     def SetPrevious(self, type,  index, frameType):
@@ -35,6 +37,9 @@ class Filter():
         elif (type == 'attack'):
             self.getMyPreviousCards[5] = frameType
             self.indexAttack = index
+        elif (type == 'defense'):
+            self.getMyPreviousCards[5] = frameType
+            self.indexDefense = index
 
     def GetPrevious(self, type, frameType):
         if (type == 'frame'):
@@ -55,6 +60,9 @@ class Filter():
         elif (type == 'attack'):
             self.attack = self.getMyPreviousCards[4]
             return self.indexAttack
+        elif (type == 'defense'):
+            self.defense = self.getMyPreviousCards[4]
+            return self.indexDefense
 
     def FrameType(self):
         cardFrame = self.mydb.cursor()
@@ -104,8 +112,16 @@ class Filter():
 
     def Attack(self):
         cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT atk FROM cards WHERE atk != '' ORDER BY CAST(atk AS SIGNED INTEGER)")
-        set = ['all']
+        cardFrame.execute("SELECT atk FROM cards WHERE atk > '0' ORDER BY CAST(atk AS SIGNED INTEGER)")
+        set = ['all', '0']
+        for i in self.UniqueSet(cardFrame.fetchall()):
+            set.append(i[0])
+        return set
+
+    def Defense(self):
+        cardFrame = self.mydb.cursor()
+        cardFrame.execute("SELECT def FROM cards WHERE def > '0' ORDER BY CAST(def AS SIGNED INTEGER)")
+        set = ['all', '0']
         for i in self.UniqueSet(cardFrame.fetchall()):
             set.append(i[0])
         return set
@@ -123,6 +139,8 @@ class Filter():
             self.attribute = info
         elif cardType == 'attack':
             self.attack = info
+        elif cardType == 'defense':
+            self.defense = info
 
     def GetAllCards(self):
         card = self.mydb.cursor()
@@ -132,6 +150,7 @@ class Filter():
         level = ''
         attribute = ''
         attack = ''
+        defense = ''
         myset = ''
 
         set = []
@@ -158,6 +177,9 @@ class Filter():
             attack = "atk LIKE '" + self.attack + "'"
             set.append(attack)
 
+        if (self.defense != 'all'):
+            defense = "def LIKE '" + self.defense + "'"
+            set.append(defense)
 
         if (self.attribute != 'all' and self.attribute != 'undefined'):
             attribute = "attribute LIKE '" + self.attribute  + "'"
@@ -170,6 +192,7 @@ class Filter():
         self.getMyCards[3] = level
         self.getMyCards[4] = attribute
         self.getMyCards[5] = attack
+        self.getMyCards[6] = defense
 
         if len(self.getMyCards) > 1:
             n = 0
@@ -180,14 +203,16 @@ class Filter():
                 elif len(i) != 0 and n != 0:
                     myset = myset + " AND " + str(i)
 
-        if (self.frame == 'all' and self.archeType == 'all' and self.race == 'all' and self.level == 'all' and self.attribute == 'all' and attack == 'all'):
+        code = "SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset
+
+        if (self.frame == 'all' and self.archeType == 'all' and self.race == 'all' and self.level == 'all' and self.attribute == 'all' and self.attack == 'all' and self.defense == 'all'):
             card.execute("SELECT id, name, description, frameType, card_index FROM cards")
         elif (self.archeType == 'all'):
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset)
+            card.execute(code)
         elif (self.archeType == 'undefined'):
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset)
+            card.execute(code)
         else:
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset, (self.archeType,))
+            card.execute(code, (self.archeType,))
 
         return card.fetchall()
 
