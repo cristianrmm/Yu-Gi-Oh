@@ -1,6 +1,5 @@
 import math
 import tkinter.messagebox
-
 import requests
 import json
 import os
@@ -31,6 +30,7 @@ def Main_Window(myDB):
     root = Tk()
     root.attributes('-fullscreen', True)
     cardId = DB_GetCardInfo(myDB)
+    allCardId = DB_GetCardInfo(myDB)
     #Display all card Info for the user from Treeview
     index = 0
     sampleSize = 100
@@ -43,22 +43,6 @@ def Main_Window(myDB):
     label = [my_Label, name_Label, des_Label, type_Label]
 
     f = Filter(myDB)
-
-    options = Menu(root)
-    root.config(menu=options)
-    fileMenu = Menu(options)
-    options.add_cascade(label='File', menu=fileMenu)
-    fileMenu.add_command(label='New')
-    fileMenu.add_command(label='Open..')
-    fileMenu.add_command(label='Save')
-    fileMenu.add_separator()
-    fileMenu.add_command(label='Exit', command=root.quit)
-    helpmenue = Menu(options)
-    options.add_cascade(label='Help', menu=helpmenue)
-    helpmenue.add_command(label='About')
-
-
-
     images = [(ImageTk.PhotoImage(Image.open("images\\" + str(cardId[0][0]) + ".jpg").resize((271, 395))))]
 
     mainFrame = LabelFrame(root, text="main")
@@ -110,30 +94,38 @@ def Main_Window(myDB):
     table = Frame(mainFrame)
     #seting up a look up table
     my_tree = ttk.Treeview(table)
-    my_tree['columns'] = ('id', 'name')
+    my_tree['columns'] = ('id', 'name', 'cardId')
     my_tree.column('#0')
     my_tree.column('id', anchor=W)
     my_tree.column('name', anchor=CENTER)
+    my_tree.column('cardId', width=0, stretch=NO)
 
     my_tree.heading('#0', text='', anchor=W)
     my_tree.heading('id', text='id', anchor=W)
     my_tree.heading('name', text='name', anchor=CENTER)
+    my_tree.heading('cardId', text='cardId', anchor=CENTER)
 
     deck = LabelFrame(table, text='deck')
     deckNPC = ttk.Treeview(deck)
-    deckNPC['columns'] = ('id', 'name')
-    deckNPC.column('#0', width=0, stretch=NO)
+    deckNPC['columns'] = ('count', 'id', 'name', 'index')
+    deckNPC.column('#0')
+    deckNPC.column('count', anchor=CENTER)
     deckNPC.column('id', anchor=CENTER)
     deckNPC.column('name', anchor=CENTER)
+    deckNPC.column('index', width=0, stretch=NO)
 
     deckNPC.heading('#0')
+    deckNPC.heading('count', text='count')
     deckNPC.heading('id', text='ID')
     deckNPC.heading('name', text='Name')
+    deckNPC.heading('index', text='Index')
+    deckNPC.insert(parent='', index=100, iid=100, text='Deck')
+    deckNPC.insert(parent='', index=200, iid=200, text='Extra')
 
     count = 0
     location = sampleSize * cardSet[0] + count
     while location < sampleSize * (cardSet[0] + 1) and location < len(cardId):
-        my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
+        my_tree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1]), str(cardId[location][4]-1)))
         count += 1
         location = sampleSize * cardSet[0] + count
 
@@ -169,7 +161,8 @@ def Main_Window(myDB):
     nextSet.grid(row=2, column=2, sticky=E)
 
     initialSet = [sampleSize * cardSet[0]]
-
+    deckCount = [0, 0]
+    addCard.bind('<Button-1>', lambda Event: GetCard(Event, cardId, my_tree, deckNPC, deckCount))
     previousSet.bind('<Button-1>', lambda Event: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
     previousSet.unbind('<Button-1>')
     nextSet.bind('<Button-1>', lambda Event: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
@@ -217,9 +210,70 @@ def Main_Window(myDB):
     defense.bind('<<ComboboxSelected>>', lambda Event: ShowCard(mainFrame, label, images, cardId, cardSet, sampleSize), add='+')
     defense.bind('<<ComboboxSelected>>', lambda Event: AcctiveButton(label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet), add='+')
 
-    my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, label, mainFrame, images, my_tree, cardId, initialSet))
+    my_tree.bind('<Button-1>', lambda Event: SelectItem(Event, 'allcards', label, mainFrame, images, my_tree, cardId, initialSet))
+    deckNPC.bind('<Button-1>', lambda Event: SelectItem(Event, 'deck',  label, mainFrame, images, deckNPC, allCardId, initialSet))
     root.bind('<Escape>', lambda Event: Quit(root))
+
+    options = Menu(root)
+    root.config(menu=options)
+    fileMenu = Menu(options)
+    options.add_cascade(label='File', menu=fileMenu)
+    fileMenu.add_command(label='New', command=lambda: NewDeck(deck, deckNPC))
+    fileMenu.add_command(label='Open')
+    fileMenu.add_command(label='Save')
+    fileMenu.add_separator()
+    fileMenu.add_command(label='Exit', command=lambda: Quit(root))
+    helpmenue = Menu(options)
+    options.add_cascade(label='Help', menu=helpmenue)
+    helpmenue.add_command(label='About')
     root.mainloop()
+
+def NewDeck(deck, deckNPC):
+    choice = Tk()
+
+    ok = Button(choice, text='ok')
+    ok.grid(row=0, column=0)
+
+    name = Entry(choice)
+    name.grid(row=0, column=1)
+
+    ok.bind('<Button-1>', lambda Event: NewName(Event, choice, deck, deckNPC, name))
+
+def NewName(Event, choice, deck, deckNPC, name):
+    for i in deckNPC.get_children():
+        deckNPC.delete(i)
+    deck.config(text=name.get())
+    deckNPC.insert(parent='', index=100, iid=100, text='Deck')
+    deckNPC.insert(parent='', index=200, iid=200, text='Extra')
+    choice.destroy()
+
+def GetCard(Event, cardId, my_Tree, deck, deckCount):
+    item = my_Tree.selection()
+    specify = []
+    everyChild = []
+    for line in deck.get_children():
+        for l in deck.get_children(line):
+            specify.append(deck.item(l)['values'][1])
+            specify.append(deck.item(l)['values'][2])
+            specify.append(deck.item(l)['values'][3])
+            everyChild.append(specify)
+            specify = []
+
+    copyDeck = everyChild.count(my_Tree.item(item)['values'] + [int(my_Tree.item(item)['text'])])
+    copyExtra = everyChild.count(my_Tree.item(item)['values'] + [int(my_Tree.item(item)['text'])])
+
+    if len(my_Tree.item(item)['values']) != 0:
+        if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz']:
+            if deckCount[0] < 60:
+                if copyDeck < 3:
+                    deck.insert(parent='100', index='end', iid=len(everyChild), values= [deckCount[0]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
+                    deckCount[0] = deckCount[0] + 1
+        else:
+            if deckCount[1] < 15:
+                if copyExtra < 3:
+                    deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
+                    deckCount[1] = deckCount[1] + 1
+
 
 def DeleteTableSelection(f, cardtype, frameType, myTree, cardId, treePass):
     f.GetCardInfo(cardtype, frameType.get())
@@ -246,31 +300,15 @@ def SetTable(f, myTree, sampleSize, cardId, cardSet, initialSet, treePass):
     location = sampleSize * cardSet[0] + count
     allCards = f.GetAllCards()
     while location < sampleSize * (cardSet[0] + 1) and location <= len(cardId) - 1 and len(allCards) > 0 and treePass[0]:
-        myTree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1])))
+        myTree.insert(parent='', index='end', iid=location, text=str(location), values=(str(cardId[location][0]), str(cardId[location][1]), str(cardId[location][4] -1)))
         count += 1
         location = sampleSize * cardSet[0] + count
     initialSet = [sampleSize * cardSet[0]]
 
 def ShowCard(root, label, images, cardId, cardSet, sampleSize):
     images[0] = ImageTk.PhotoImage(Image.open('Images\\' + str(cardId[0][0]) + '.jpg').resize((271, 395)))
-
-    label[0][0].destroy()
-    label[1][0].destroy()
-    label[2][0].destroy()
-    label[3][0].destroy()
-
-    label[0][0] = Label(root, image=images[0])
-    label[0][0].grid(row=0, column=0, rowspan=3, sticky=W)
-
     index = sampleSize * cardSet[0]
-    label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
-    label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
-
-    label[2][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
-    label[2][0].grid(row=1, column=1, columnspan=3, sticky=W)
-
-    label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
-    label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
+    CardInfo(root, label, cardId, index, images)
 
 def AcctiveButton(label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet):
     ps['state'] = DISABLED
@@ -286,8 +324,6 @@ def AcctiveButton(label, root, cardSet, my_tree, cardId, sampleSize, images, ini
 
 def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, initialSet, ps, ns, imageSet):
     images.clear()
-
-
     if nexstep == '+':
         cardSet[0] = cardSet[0] + 1
         imageSet['text'] = str(cardSet[0]) + ':' + str(math.floor(len(cardId) / sampleSize))
@@ -322,16 +358,33 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
         count += 1
         location = sampleSize * cardSet[0] + count
     initialSet = [sampleSize * cardSet[0]]
+    index = sampleSize * cardSet[0]
 
+    CardInfo(root, label, cardId, index, images)
+
+def SelectItem(Event, selection, label, root, images, myTree, allCardId, initialSet):
+    item = myTree.identify('item', Event.x, Event.y)
+    if(len(myTree.item(item)['values']) != 0):
+        if selection == 'allcards':
+            images[0] = ImageTk.PhotoImage(Image.open("images\\" + str(myTree.item(item)['values'][0]) + ".jpg").resize((271, 395)))
+            index = int(myTree.item(item)['text'])
+            CardInfo(root, label, allCardId, index, images)
+
+        elif selection == 'deck':
+            if myTree.item(item)['values'][1] != 'Deck' and myTree.item(item)['values'][1] != 'Extra':
+                index = myTree.item(item)['values'][3]
+                images[0] = ImageTk.PhotoImage(Image.open("images\\" + str(myTree.item(item)['values'][1]) + ".jpg").resize((271, 395)))
+                CardInfo(root, label, allCardId, index, images)
+
+def CardInfo(root, label, cardId, index, images):
     label[0][0].destroy()
     label[1][0].destroy()
     label[2][0].destroy()
     label[3][0].destroy()
 
-    label[0][0] = Label(root, image = images[0])
-    label[0][0].grid(row=0, column= 0, rowspan=3, sticky=W)
-
-    index = sampleSize * cardSet[0]
+    # Display all card Info for the user from Treeview
+    label[0][0] = Label(root, image=images[0])
+    label[0][0].grid(row=0, column=0, rowspan=3, sticky=W)
     label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
     label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
 
@@ -340,30 +393,6 @@ def NextSet(nexstep, label, root, cardSet, my_tree, cardId, sampleSize, images, 
 
     label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
     label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
-
-def SelectItem(Event, label, root, images, myTree, cardId, initialSet):
-    item = myTree.identify('item', Event.x, Event.y)
-    if(len(myTree.item(item)['values']) != 0):
-        label[0][0].destroy()
-        label[1][0].destroy()
-        label[2][0].destroy()
-        label[3][0].destroy()
-
-        images[0] = ImageTk.PhotoImage(Image.open("images\\" + str(myTree.item(item)['values'][0]) + ".jpg").resize((271, 395)))
-        index = int(myTree.item(item)['text'])
-
-        # Display all card Info for the user from Treeview
-        label[0][0] = Label(root, image=images[0])
-        label[0][0].grid(row=0, column=0, rowspan=3, sticky=W)
-
-        label[1][0] = Label(root, text="Name: \n" + str(cardId[index][1]), justify="left")
-        label[1][0].grid(row=0, column=1, columnspan=3, sticky=W)
-
-        label[2][0] = Label(root, text="Description: \n" + str(cardId[index][2]), justify="left", wraplength=1000)
-        label[2][0].grid(row=1, column=1, columnspan=3, sticky=W)
-
-        label[3][0] = Label(root, text="Card type: \n" + str(cardId[index][3]), justify="left")
-        label[3][0].grid(row=2, column=1, columnspan=3, sticky=W)
 
 
 def DB_GetCardInfo(myDB):
