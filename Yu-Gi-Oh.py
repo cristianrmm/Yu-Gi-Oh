@@ -11,6 +11,7 @@ from tkinter import *
 from tkinter import ttk
 from PIL import ImageTk, Image
 from Filter import  Filter
+from DB_Save import DB_Save
 
 def main():
     myCards = MyFile()['data']
@@ -20,6 +21,7 @@ def main():
         passwd='',
         database='yu_gi_oh'
     )
+    myDB.commit()
     allSets = AllCardSets(myCards)
     DB_Access(myDB, myCards, allSets)
     SaveImages(myCards)
@@ -162,7 +164,8 @@ def Main_Window(myDB):
 
     initialSet = [sampleSize * cardSet[0]]
     deckCount = [0, 0]
-    addCard.bind('<Button-1>', lambda Event: GetCard(Event, cardId, my_tree, deckNPC, deckCount))
+    file = DB_Save(myDB, deck, deckNPC)
+    addCard.bind('<Button-1>', lambda Event: ConditionGetCard(Event, cardId, my_tree, deckNPC, deckCount, file))
     previousSet.bind('<Button-1>', lambda Event: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
     previousSet.unbind('<Button-1>')
     nextSet.bind('<Button-1>', lambda Event: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
@@ -214,13 +217,15 @@ def Main_Window(myDB):
     deckNPC.bind('<Button-1>', lambda Event: SelectItem(Event, 'deck',  label, mainFrame, images, deckNPC, allCardId, initialSet))
     root.bind('<Escape>', lambda Event: Quit(root))
 
+
+    file.DB_CreateTable()
     options = Menu(root)
     root.config(menu=options)
     fileMenu = Menu(options)
     options.add_cascade(label='File', menu=fileMenu)
-    fileMenu.add_command(label='New', command=lambda: NewDeck(deck, deckNPC))
+    fileMenu.add_command(label='New', command=lambda: file.NewDeck())
     fileMenu.add_command(label='Open')
-    fileMenu.add_command(label='Save')
+    fileMenu.add_command(label='Save', command=lambda: file.DB_Save())
     fileMenu.add_separator()
     fileMenu.add_command(label='Exit', command=lambda: Quit(root))
     helpmenue = Menu(options)
@@ -228,26 +233,13 @@ def Main_Window(myDB):
     helpmenue.add_command(label='About')
     root.mainloop()
 
-def NewDeck(deck, deckNPC):
-    choice = Tk()
+def ConditionGetCard(Event, cardId, my_Tree, deck, deckCount, file):
+    if file.GetDeckName() != 'deck':
+        GetCard(Event, cardId, my_Tree, deck, deckCount, file)
+    else:
+        tkinter.messagebox.showwarning(title='New deck', message='You need to creat a new deck')
 
-    ok = Button(choice, text='ok')
-    ok.grid(row=0, column=0)
-
-    name = Entry(choice)
-    name.grid(row=0, column=1)
-
-    ok.bind('<Button-1>', lambda Event: NewName(Event, choice, deck, deckNPC, name))
-
-def NewName(Event, choice, deck, deckNPC, name):
-    for i in deckNPC.get_children():
-        deckNPC.delete(i)
-    deck.config(text=name.get())
-    deckNPC.insert(parent='', index=100, iid=100, text='Deck')
-    deckNPC.insert(parent='', index=200, iid=200, text='Extra')
-    choice.destroy()
-
-def GetCard(Event, cardId, my_Tree, deck, deckCount):
+def GetCard(Event, cardId, my_Tree, deck, deckCount, file):
     item = my_Tree.selection()
     specify = []
     everyChild = []
@@ -258,12 +250,12 @@ def GetCard(Event, cardId, my_Tree, deck, deckCount):
             specify.append(deck.item(l)['values'][3])
             everyChild.append(specify)
             specify = []
-
-    copyDeck = everyChild.count(my_Tree.item(item)['values'] + [int(my_Tree.item(item)['text'])])
-    copyExtra = everyChild.count(my_Tree.item(item)['values'] + [int(my_Tree.item(item)['text'])])
+    file.SetDeck(everyChild)
+    copyDeck = everyChild.count(my_Tree.item(item)['values'])
+    copyExtra = everyChild.count(my_Tree.item(item)['values'])
 
     if len(my_Tree.item(item)['values']) != 0:
-        if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz']:
+        if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz', 'link', 'synchro_pendulum', 'fusion_pendulum', 'xyz_pendulum']:
             if deckCount[0] < 60:
                 if copyDeck < 3:
                     deck.insert(parent='100', index='end', iid=len(everyChild), values= [deckCount[0]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
@@ -273,6 +265,13 @@ def GetCard(Event, cardId, my_Tree, deck, deckCount):
                 if copyExtra < 3:
                     deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
                     deckCount[1] = deckCount[1] + 1
+
+
+def DB_UserId(myDb):
+    my_cursor = myDb.cursor()
+    sql_code = "SELECT userId FROM decks"
+    my_cursor.execute(sql_code)
+    return my_cursor.fetchall()
 
 
 def DeleteTableSelection(f, cardtype, frameType, myTree, cardId, treePass):
@@ -501,7 +500,7 @@ def DB_InsertCard(mydb, info, cardInfo, qty):
     mydb.commit()
     my_cursor.close()
 
-def DB_CreateTable(mydb):
+def DB_CreateDataBase(mydb):
     my_cursor = mydb.cursor()
     my_cursor.execute("CREATE DATABASE yu_gi_oh")
     mydb.commit()
