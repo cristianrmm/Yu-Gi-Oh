@@ -224,10 +224,11 @@ def Main_Window(myDB):
     fileMenu = Menu(options)
     options.add_cascade(label='File', menu=fileMenu)
     fileMenu.add_command(label='New', command=lambda: file.NewDeck())
-    fileMenu.add_command(label='Open')
+    fileMenu.add_command(label='Open', command=lambda: file.Open())
     fileMenu.add_command(label='Save', command=lambda: file.DB_Save())
     fileMenu.add_separator()
     fileMenu.add_command(label='Exit', command=lambda: Quit(root))
+
     helpmenue = Menu(options)
     options.add_cascade(label='Help', menu=helpmenue)
     helpmenue.add_command(label='About')
@@ -243,28 +244,44 @@ def GetCard(Event, cardId, my_Tree, deck, deckCount, file):
     item = my_Tree.selection()
     specify = []
     everyChild = []
-    for line in deck.get_children():
-        for l in deck.get_children(line):
-            specify.append(deck.item(l)['values'][1])
-            specify.append(deck.item(l)['values'][2])
-            specify.append(deck.item(l)['values'][3])
-            everyChild.append(specify)
-            specify = []
-    file.SetDeck(everyChild)
+    postEveryChild = []
+
+    EveryChild(deck, everyChild, specify)
+
     copyDeck = everyChild.count(my_Tree.item(item)['values'])
     copyExtra = everyChild.count(my_Tree.item(item)['values'])
-
+    deckCount[0] = len(deck.get_children('100'))
+    deckCount[1] = len(deck.get_children('200'))
     if len(my_Tree.item(item)['values']) != 0:
         if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz', 'link', 'synchro_pendulum', 'fusion_pendulum', 'xyz_pendulum']:
             if deckCount[0] < 60:
                 if copyDeck < 3:
                     deck.insert(parent='100', index='end', iid=len(everyChild), values= [deckCount[0]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
-                    deckCount[0] = deckCount[0] + 1
+                    deckCount[0] = len(deck.get_children('100'))
         else:
             if deckCount[1] < 15:
                 if copyExtra < 3:
                     deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
-                    deckCount[1] = deckCount[1] + 1
+                    deckCount[1] = len(deck.get_children('200'))
+
+    EveryChild(deck, postEveryChild, specify)
+    file.SetDeck(postEveryChild)
+
+
+def EveryChild(deck, everyChild, specify):
+    for line in deck.get_children():
+        print(line)
+        for l in deck.get_children(line):
+            print(deck.item(l)['values'])
+            specify.append(deck.item(l)['values'][1])
+            specify.append(deck.item(l)['values'][2])
+            specify.append(deck.item(l)['values'][3])
+            if (line == '100'):
+                specify.append(int(deck.item(l)['values'][0]) + 100)
+            else:
+                specify.append(int(deck.item(l)['values'][0]) + 200)
+            everyChild.append(specify)
+            specify = []
 
 
 def DB_UserId(myDb):
