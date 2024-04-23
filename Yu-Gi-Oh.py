@@ -135,6 +135,7 @@ def Main_Window(myDB):
     imageSet = Label(table, text=str(cardSet[0])+ ':' + str(math.floor(len(cardId) / sampleSize)))
     nextSet = Button(table, text='>')
     addCard = Button(table, text='Add')
+    deleteCard = Button(deck, text='Delete')
 
     frameLabel.grid(row=0, column=0, sticky=NW)
     frameType.grid(row=1, column=0, sticky=N)
@@ -155,8 +156,9 @@ def Main_Window(myDB):
     table.grid(row=5, column=0, columnspan=2, sticky=W)
     addCard.grid(row=0, column=0)
     my_tree.grid(row=1, column=0, columnspan=3)
-    deck.grid(row=1, column=3, columnspan=2)
+    deck.grid(row=1, column=3, columnspan=2, rowspan=2)
     deckNPC.grid(row=0, column=0)
+    deleteCard.grid(row=1, column=0)
     previousSet.grid(row=2, column=0, sticky=W)
     imageSet.grid(row=2, column=1)
 
@@ -166,6 +168,7 @@ def Main_Window(myDB):
     deckCount = [0, 0]
     file = DB_Save(myDB, deck, deckNPC)
     addCard.bind('<Button-1>', lambda Event: ConditionGetCard(Event, cardId, my_tree, deckNPC, deckCount, file))
+    deleteCard.bind('<Button-1>', lambda Event: DeleteCard(deckNPC, file))
     previousSet.bind('<Button-1>', lambda Event: NextSet('-', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
     previousSet.unbind('<Button-1>')
     nextSet.bind('<Button-1>', lambda Event: NextSet('+', label, mainFrame, cardSet, my_tree, cardId, sampleSize, images, initialSet, previousSet, nextSet, imageSet))
@@ -234,6 +237,44 @@ def Main_Window(myDB):
     helpmenue.add_command(label='About')
     root.mainloop()
 
+def DeleteCard(deckNPC, file):
+    n = deckNPC.selection()
+    everyChild = []
+    specify = []
+    if n[0] in deckNPC.get_children('100'):
+        for i in deckNPC.get_children('100'):
+            if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
+                deckNPC.delete(n)
+                break
+    elif n[0] in deckNPC.get_children('200'):
+        for i in deckNPC.get_children('200'):
+            if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
+                deckNPC.delete(n)
+                break
+
+    EveryChild(deckNPC, everyChild)
+    file.SetDeck(everyChild)
+
+    for i in deckNPC.get_children():
+        deckNPC.delete(i)
+
+    deckNPC.insert(parent='', index=100, iid=100, text='Deck')
+    deckNPC.insert(parent='', index=200, iid=200, text='Extra')
+
+    n = 0
+    s = 0
+    for i in everyChild:
+        if i[3] >= 100 and i[3] <= 199:
+            deckNPC.insert(parent='100', index='end', iid=n, text='', values=(n, i[0], i[1], i[2]))
+            n = n + 1
+        elif i[3] >= 200 and i[3] <= 299:
+            deckNPC.insert(parent='200', index='end', iid=n, text='', values=(s, i[0], i[1], i[2]))
+            n = n + 1
+            s = s + 1
+
+    deckNPC.item('100', open=True)
+    deckNPC.item('200', open=True)
+
 def ConditionGetCard(Event, cardId, my_Tree, deck, deckCount, file):
     if file.GetDeckName() != 'deck':
         GetCard(Event, cardId, my_Tree, deck, deckCount, file)
@@ -242,14 +283,20 @@ def ConditionGetCard(Event, cardId, my_Tree, deck, deckCount, file):
 
 def GetCard(Event, cardId, my_Tree, deck, deckCount, file):
     item = my_Tree.selection()
-    specify = []
     everyChild = []
     postEveryChild = []
 
-    EveryChild(deck, everyChild, specify)
+    EveryChild(deck, everyChild)
 
-    copyDeck = everyChild.count(my_Tree.item(item)['values'])
-    copyExtra = everyChild.count(my_Tree.item(item)['values'])
+    n = 0
+    copyDeck = 0
+    copyExtra = 0
+    for i in everyChild:
+        if len(everyChild) > 0:
+            if i[1] == my_Tree.item(item)['values'][1]:
+                n = n + 1
+                copyDeck = n
+                copyExtra = n
     deckCount[0] = len(deck.get_children('100'))
     deckCount[1] = len(deck.get_children('200'))
     if len(my_Tree.item(item)['values']) != 0:
@@ -264,15 +311,16 @@ def GetCard(Event, cardId, my_Tree, deck, deckCount, file):
                     deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
                     deckCount[1] = len(deck.get_children('200'))
 
-    EveryChild(deck, postEveryChild, specify)
+    deck.item('100', open=True)
+    deck.item('200', open=True)
+    EveryChild(deck, postEveryChild)
     file.SetDeck(postEveryChild)
 
 
-def EveryChild(deck, everyChild, specify):
+def EveryChild(deck, everyChild):
+    specify = []
     for line in deck.get_children():
-        print(line)
         for l in deck.get_children(line):
-            print(deck.item(l)['values'])
             specify.append(deck.item(l)['values'][1])
             specify.append(deck.item(l)['values'][2])
             specify.append(deck.item(l)['values'][3])
