@@ -8,6 +8,7 @@ class DB_Save():
         self.deck = deck
         self.deckNPC = deckNPC
         self.card = []
+        self.userId = ''
 
     def GetDeckName(self):
         return self.deck['text']
@@ -23,7 +24,8 @@ class DB_Save():
                     cardID VARCHAR(15),
                     name VARCHAR(127),
                     cardPosition VARCHAR(5),
-                    cardIndex INT(5)
+                    cardIndex INT(5),
+                    PRIMARY KEY(userId, cardIndex)
                     )
                     """
         my_cursor.execute(sqlCode)
@@ -61,23 +63,35 @@ class DB_Save():
             tkinter.messagebox.showwarning(title='User Name', message='The user name already exist')
 
     def DB_Save(self):
+        self.Delete()
+        save = self.myDb.cursor()
+
+        print('Deleted')
+        print(self.card)
+        if len(self.card) == 0:
+            tkinter.messagebox.showwarning(title='Deck', message='Your Deck is empty')
+        else:
+            n = 0
+            for i in self.card:
+                sqlSave = """INSERT INTO decks(userId,
+                                               cardID,
+                                               name,
+                                               cardPosition,
+                                               cardIndex
+                                               )VALUES(%s, %s, %s, %s, %s)
+                
+                        """
+                save.execute(sqlSave, (self.deck['text'], str(i[0]), str(i[1]), str(i[2]), str(i[3])))
+                n = n + 1
+        self.myDb.commit()
+        save.close()
+
+    def Delete(self):
         save = self.myDb.cursor()
         save.execute("DELETE FROM decks WHERE userId = '" + self.deck['text'] + "'")
         self.myDb.commit()
-        n = 0
-        for i in self.card:
-            sqlSave = """INSERT INTO decks(userId,
-                                           cardID,
-                                           name,
-                                           cardPosition,
-                                           cardIndex
-                                           )VALUES(%s, %s, %s, %s, %s)
-            
-                    """
-            save.execute(sqlSave, (self.deck['text'], str(i[0]), str(i[1]), str(i[2]), str(i[3])))
-            n = n + 1
-        self.myDb.commit()
         save.close()
+
 
     def Open(self):
         my_cursor = self.myDb.cursor()
@@ -119,10 +133,19 @@ class DB_Save():
         userCards = my_cursor.fetchall()
 
         self.deck.config(text=cards.item(user)['values'][0])
-
+        n = 0
+        s = 0
+        self.card.clear()
         for i in userCards:
-            self.deckNPC.insert(parent='100', index='end', iid=int(i[4]) - 100, text='', values=(int(i[4]) - 100, i[1], i[2], i[3]))
+            if i[4] >= 100 and i[4] <= 199:
+                self.deckNPC.insert(parent='100', index='end', iid=n, text='', values=(n, i[1], i[2], i[3]))
+            elif i[4] >= 200 and i[4] <= 299:
+                self.deckNPC.insert(parent='200', index='end', iid=n, text='', values=(s, i[1], i[2], i[3]))
+                s = s + 1
             self.card.append([i[1], i[2], i[3], i[4]])
+            n = n + 1
+        self.deckNPC.item('100', open=True)
+        self.deckNPC.item('200', open=True)
         openDeck.destroy()
 
     def UniqueSet(self, cardsInfo):
