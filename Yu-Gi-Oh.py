@@ -12,9 +12,12 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 from Filter import  Filter
 from DB_Save import DB_Save
+from Field import Field
+import pygame
 
 def main():
     myCards = MyFile()['data']
+    #passwd='s1e11x2y10c3r9i4s8t5i7a6n',
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
@@ -229,6 +232,7 @@ def Main_Window(myDB):
     fileMenu.add_command(label='New', command=lambda: file.NewDeck())
     fileMenu.add_command(label='Open', command=lambda: file.Open())
     fileMenu.add_command(label='Save', command=lambda: file.DB_Save())
+    fileMenu.add_command(label='Play', command=lambda: PlayGame(myDB))
     fileMenu.add_separator()
     fileMenu.add_command(label='Exit', command=lambda: Quit(root))
 
@@ -237,43 +241,165 @@ def Main_Window(myDB):
     helpmenue.add_command(label='About')
     root.mainloop()
 
+def PlayGame(myDB):
+    pygame.init()
+    screen = pygame.display.set_mode((0, 0))
+    zone = Field(myDB, screen)
+    zone.SetCards()
+    hand = zone.GetHand()
+    myHand = []
+    print(type(myHand))
+    myCardHand = []
+    pygame.display.set_caption('Play Yu_Gi_Oh')
+    clock = pygame.time.Clock()
+    running = True
+    show = False
+
+    dt = 0
+    h = 10
+    w = 30
+    x = 400
+    y = 90
+
+    zone.SetWidth(90)
+    hidden = pygame.image.load('images/000.png')
+    hidden = pygame.transform.scale(hidden, (zone.GetWidth(), zone.GetHeight()))
+    myHiddenCard = hidden.get_rect()
+    print(type(myHiddenCard))
+    myHiddenCard.topleft = (x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 4)
+
+    card = hidden
+    cardInfo = myHiddenCard
+
+    oponentHidenCard = hidden.get_rect()
+    oponentHidenCard.topleft = (x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
+
+    n = 0
+    for i in hand:
+        myHand.append(pygame.image.load('images/' + i + '.jpg'))
+        myHand[len(myHand) - 1] = pygame.transform.scale(myHand[len(myHand) - 1], (zone.GetWidth(), zone.GetHeight()))
+        myCardHand.append(myHand[len(myHand) - 1].get_rect())
+        myCardHand[len(myCardHand) - 1].topleft = (x + (zone.GetHeight() - 1 * w) * n, y + (zone.GetHeight() + h) * 5)
+        zone.SetPosToCard(str(x + (zone.GetHeight() - 1 * w) * n) +  str(y + (zone.GetHeight() + h) * 5) , i)
+        n = n + 1
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                for i in lst:
+                    if i.collidepoint(event.pos):
+                        zone.SetWidth(200)
+                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
+                        cardInfo = hidden.get_rect()
+                        cardInfo.topleft = (0, 400)
+                        show = True
+                        zone.SetWidth(90)
+
+        screen.fill('black')
+
+        #zone.DrawBox(400 + (zone.GetHeight() + 30) * n, 20 + (zone.GetHeight() + 10) * m)
+        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 0)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 0)
+
+        zone.DrawBox(x + (zone.GetHeight() + w) * -2, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 1)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 1)
+
+        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 2)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 2)
+
+        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 3)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 6, y + (zone.GetHeight() + h) * 3)
+
+        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 4)
+        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 4)
+
+        screen.blit(hidden, myHiddenCard)
+        screen.blit(hidden, oponentHidenCard)
+
+        n = 0
+        lst = []
+        while n < len(myHand) and n < len(myCardHand):
+            lst.append(screen.blit(myHand[n], myCardHand[n]))
+            n = n + 1
+
+        if show:
+            screen.blit(card, cardInfo)
+
+
+
+
+        pygame.display.flip()
+        #dt = clock.tick(60) / 1000
+
+    pygame.quit()
+
+
+
 def DeleteCard(deckNPC, file):
     n = deckNPC.selection()
     everyChild = []
     specify = []
-    if n[0] in deckNPC.get_children('100'):
-        for i in deckNPC.get_children('100'):
-            if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
-                deckNPC.delete(n)
-                break
-    elif n[0] in deckNPC.get_children('200'):
-        for i in deckNPC.get_children('200'):
-            if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
-                deckNPC.delete(n)
-                break
+    if len(n) > 0:
+        if n[0] in deckNPC.get_children('100'):
+            for i in deckNPC.get_children('100'):
+                if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
+                    deckNPC.delete(n)
+                    break
+        elif n[0] in deckNPC.get_children('200'):
+            for i in deckNPC.get_children('200'):
+                if deckNPC.item(i)['values'] == deckNPC.item(n)['values']:
+                    deckNPC.delete(n)
+                    break
 
-    EveryChild(deckNPC, everyChild)
-    file.SetDeck(everyChild)
+        EveryChild(deckNPC, everyChild)
+        file.SetDeck(everyChild)
 
-    for i in deckNPC.get_children():
-        deckNPC.delete(i)
+        for i in deckNPC.get_children():
+            deckNPC.delete(i)
 
-    deckNPC.insert(parent='', index=100, iid=100, text='Deck')
-    deckNPC.insert(parent='', index=200, iid=200, text='Extra')
+        deckNPC.insert(parent='', index=100, iid=100, text='Deck')
+        deckNPC.insert(parent='', index=200, iid=200, text='Extra')
 
-    n = 0
-    s = 0
-    for i in everyChild:
-        if i[3] >= 100 and i[3] <= 199:
-            deckNPC.insert(parent='100', index='end', iid=n, text='', values=(n, i[0], i[1], i[2]))
-            n = n + 1
-        elif i[3] >= 200 and i[3] <= 299:
-            deckNPC.insert(parent='200', index='end', iid=n, text='', values=(s, i[0], i[1], i[2]))
-            n = n + 1
-            s = s + 1
+        n = 0
+        s = 0
+        for i in everyChild:
+            if i[3] >= 100 and i[3] <= 199:
+                deckNPC.insert(parent='100', index='end', iid=n, text='', values=(n, i[0], i[1], i[2]))
+                n = n + 1
+            elif i[3] >= 200 and i[3] <= 299:
+                deckNPC.insert(parent='200', index='end', iid=n, text='', values=(s, i[0], i[1], i[2]))
+                n = n + 1
+                s = s + 1
 
-    deckNPC.item('100', open=True)
-    deckNPC.item('200', open=True)
+        deckNPC.item('100', open=True)
+        deckNPC.item('200', open=True)
 
 def ConditionGetCard(Event, cardId, my_Tree, deck, deckCount, file):
     if file.GetDeckName() != 'deck':
@@ -286,35 +412,37 @@ def GetCard(Event, cardId, my_Tree, deck, deckCount, file):
     everyChild = []
     postEveryChild = []
 
-    EveryChild(deck, everyChild)
 
-    n = 0
-    copyDeck = 0
-    copyExtra = 0
-    for i in everyChild:
-        if len(everyChild) > 0:
-            if i[1] == my_Tree.item(item)['values'][1]:
-                n = n + 1
-                copyDeck = n
-                copyExtra = n
-    deckCount[0] = len(deck.get_children('100'))
-    deckCount[1] = len(deck.get_children('200'))
-    if len(my_Tree.item(item)['values']) != 0:
-        if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz', 'link', 'synchro_pendulum', 'fusion_pendulum', 'xyz_pendulum']:
-            if deckCount[0] < 60:
-                if copyDeck < 3:
-                    deck.insert(parent='100', index='end', iid=len(everyChild), values= [deckCount[0]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
-                    deckCount[0] = len(deck.get_children('100'))
-        else:
-            if deckCount[1] < 15:
-                if copyExtra < 3:
-                    deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
-                    deckCount[1] = len(deck.get_children('200'))
+    if len(my_Tree.item(item)['values']) > 0:
+        EveryChild(deck, everyChild)
 
-    deck.item('100', open=True)
-    deck.item('200', open=True)
-    EveryChild(deck, postEveryChild)
-    file.SetDeck(postEveryChild)
+        n = 0
+        copyDeck = 0
+        copyExtra = 0
+        for i in everyChild:
+            if len(everyChild) > 0:
+                if i[1] == my_Tree.item(item)['values'][1]:
+                    n = n + 1
+                    copyDeck = n
+                    copyExtra = n
+        deckCount[0] = len(deck.get_children('100'))
+        deckCount[1] = len(deck.get_children('200'))
+        if len(my_Tree.item(item)['values']) != 0:
+            if cardId[int(my_Tree.item(item)['text'])][3] not in ['synchro', 'fusion', 'xyz', 'link', 'synchro_pendulum', 'fusion_pendulum', 'xyz_pendulum']:
+                if deckCount[0] < 60:
+                    if copyDeck < 3:
+                        deck.insert(parent='100', index='end', iid=len(everyChild), values= [deckCount[0]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
+                        deckCount[0] = len(deck.get_children('100'))
+            else:
+                if deckCount[1] < 15:
+                    if copyExtra < 3:
+                        deck.insert(parent='200', index='end', iid=len(everyChild), values= [deckCount[1]] + my_Tree.item(item)['values']+[my_Tree.item(item)['text']])
+                        deckCount[1] = len(deck.get_children('200'))
+
+        deck.item('100', open=True)
+        deck.item('200', open=True)
+        EveryChild(deck, postEveryChild)
+        file.SetDeck(postEveryChild)
 
 
 def EveryChild(deck, everyChild):
