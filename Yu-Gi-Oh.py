@@ -17,7 +17,6 @@ import pygame
 
 def main():
     myCards = MyFile()['data']
-    #passwd='s1e11x2y10c3r9i4s8t5i7a6n',
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
