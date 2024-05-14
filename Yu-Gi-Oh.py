@@ -17,6 +17,7 @@ import pygame
 
 def main():
     myCards = MyFile()['data']
+    #passwd='s1e11x2y10c3r9i4s8t5i7a6n',
     myDB = mysql.connector.connect(
         host='localhost',
         user='root',
@@ -246,9 +247,11 @@ def PlayGame(myDB):
     zone = Field(myDB, screen)
     zone.SetCards()
     hand = zone.GetHand()
+    opHand = zone.OpGetHand()
     myHand = []
-    print(type(myHand))
+    myOpHand = []
     myCardHand = []
+    myOpCardHand = []
     pygame.display.set_caption('Play Yu_Gi_Oh')
     clock = pygame.time.Clock()
     running = True
@@ -259,12 +262,13 @@ def PlayGame(myDB):
     w = 30
     x = 400
     y = 90
+    opX = 1045
+    opY = -190
 
     zone.SetWidth(90)
     hidden = pygame.image.load('images/000.png')
     hidden = pygame.transform.scale(hidden, (zone.GetWidth(), zone.GetHeight()))
     myHiddenCard = hidden.get_rect()
-    print(type(myHiddenCard))
     myHiddenCard.topleft = (x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 4)
 
     card = hidden
@@ -280,6 +284,19 @@ def PlayGame(myDB):
         myCardHand.append(myHand[len(myHand) - 1].get_rect())
         myCardHand[len(myCardHand) - 1].topleft = (x + (zone.GetHeight() - 1 * w) * n, y + (zone.GetHeight() + h) * 5)
         zone.SetPosToCard(str(x + (zone.GetHeight() - 1 * w) * n) +  str(y + (zone.GetHeight() + h) * 5) , i)
+        n = n + 1
+
+    n = 0
+    for i in opHand:
+        myOpHand.append(pygame.image.load('images/' + i + '.jpg'))
+        myOpHand[len(myOpHand) - 1] = pygame.transform.scale(myOpHand[len(myOpHand) - 1], (zone.GetWidth(), zone.GetHeight()))
+        myOpHand[len(myOpHand) - 1] = pygame.transform.rotate(myOpHand[len(myOpHand) -1], 180)
+        myOpCardHand.append(myOpHand[len(myOpHand) - 1].get_rect())
+        myOpCardHand[len(myOpCardHand) - 1].topleft = (opX - (zone.GetHeight() - 1 * w) * n, math.floor(opY + (zone.GetHeight() + h)))
+        if (opY + (zone.GetHeight() + h) > 0):
+            zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) + str(math.floor(opY + (zone.GetHeight() + h))), i)
+        else:
+            zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) +  str(0) , i)
         n = n + 1
 
     while running:
@@ -301,43 +318,9 @@ def PlayGame(myDB):
 
         screen.fill('black')
 
-        #zone.DrawBox(400 + (zone.GetHeight() + 30) * n, 20 + (zone.GetHeight() + 10) * m)
-        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 0)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 0)
-
-        zone.DrawBox(x + (zone.GetHeight() + w) * -2, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 1)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 1)
-
-        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 2)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 2)
-
-        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 3)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 6, y + (zone.GetHeight() + h) * 3)
-
-        zone.DrawBox(x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 0, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 1, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 2, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 3, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 4, y + (zone.GetHeight() + h) * 4)
-        zone.DrawBox(x + (zone.GetHeight() + w) * 5, y + (zone.GetHeight() + h) * 4)
+        zone.Field(x, y, w, h)
+        zone.MyLifePoint(1450, 20)
+        zone.MyLifePoint(20, 850)
 
         screen.blit(hidden, myHiddenCard)
         screen.blit(hidden, oponentHidenCard)
@@ -348,18 +331,18 @@ def PlayGame(myDB):
             lst.append(screen.blit(myHand[n], myCardHand[n]))
             n = n + 1
 
+        n = 0
+        while n < len(myOpHand) and n < len(myOpCardHand):
+            lst.append(screen.blit(myOpHand[n], myOpCardHand[n]))
+            n = n + 1
+
         if show:
             screen.blit(card, cardInfo)
-
-
-
 
         pygame.display.flip()
         #dt = clock.tick(60) / 1000
 
     pygame.quit()
-
-
 
 def DeleteCard(deckNPC, file):
     n = deckNPC.selection()
