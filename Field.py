@@ -13,6 +13,8 @@ class Field():
 
         self.phase = ['Draw Phace', 'Standby Phase', 'Main Phase1', 'Battale Phase', 'Main Phase2', 'End Phase']
 
+        self.fieldInfo = ''
+
         self.id = {}
         self.deck = []
         self.hand = []
@@ -99,11 +101,13 @@ class Field():
 
     def GetHand(self):
         hand = 0
+        index = 0
         for i in reversed(self.mainDeck):
             if hand == 5:
                 break
             self.mainDeck.remove(i)
             self.hand.append(i)
+            self.ChangeCardSet(i, 'D', 'H')
             hand = hand + 1
         return self.hand
 
@@ -117,16 +121,24 @@ class Field():
             hand = hand + 1
         return self.opHand
 
+    def ChangeCardSet(self, i, original, newSet):
+        index = 0
+        fieldInfo = self.fieldInfo.split(':')
+        for j in fieldInfo:
+            if original + ',' + i == j:
+                fieldInfo[index] = newSet + ',' + i
+                self.fieldInfo = ':'.join(fieldInfo)
+                break
+            index = index + 1
+
     def GetDeckString(self):
-        fieldInfo = ''
         n = 0
         for i in self.deck:
             if n > 0:
-                fieldInfo = fieldInfo + ':' + i
+                self.fieldInfo = self.fieldInfo + ':D,' + i
             else:
-                fieldInfo = fieldInfo + i
+                self.fieldInfo = self.fieldInfo + 'D,' + i
                 n = n + 1
-        return fieldInfo
 
     def OpGetDeckString(self):
         fieldInfo = ''
@@ -137,7 +149,6 @@ class Field():
             else:
                 fieldInfo = fieldInfo + i
                 n = n + 1
-        return fieldInfo
 
     def DrawBox(self, x, y):
         pygame.draw.line(self.screen, 'yellow', (x, y), (x + self.GetWidth(), y), 3)
