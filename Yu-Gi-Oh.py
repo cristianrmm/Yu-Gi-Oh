@@ -242,9 +242,12 @@ def Main_Window(myDB):
 
 def PlayGame(myDB):
     pygame.init()
+    myfont = pygame.font.SysFont('arial', 30)
     screen = pygame.display.set_mode((0, 0))
     zone = Field(myDB, screen)
     zone.SetCards()
+    zone.GetDeckString()
+    zone.OpGetDeckString()
     hand = zone.GetHand()
     opHand = zone.OpGetHand()
     myHand = []
@@ -263,6 +266,10 @@ def PlayGame(myDB):
     y = 90
     opX = 1045
     opY = -190
+    opponent = False
+
+    buttonX = 0
+    buttonY = 0
 
     zone.SetWidth(90)
     hidden = pygame.image.load('images/000.png')
@@ -298,7 +305,9 @@ def PlayGame(myDB):
             zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) +  str(0) , i)
         n = n + 1
 
+    print(zone.fieldInfo)
     while running:
+        screen.fill('black')
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -307,6 +316,8 @@ def PlayGame(myDB):
                 pos = pygame.mouse.get_pos()
                 for i in lst:
                     if i.collidepoint(event.pos):
+                        buttonX = i.topleft[0]
+                        buttonY = i.topleft[1]
                         zone.SetWidth(200)
                         card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
@@ -314,8 +325,22 @@ def PlayGame(myDB):
                         cardInfo.topleft = (0, 400)
                         show = True
                         zone.SetWidth(90)
-
-        screen.fill('black')
+                        opponent = False
+                for i in opLst:
+                    if i.collidepoint(event.pos):
+                        buttonX = i.topleft[0]
+                        buttonY = i.topleft[1]
+                        zone.SetWidth(200)
+                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
+                        cardInfo = hidden.get_rect()
+                        cardInfo.topleft = (0, 400)
+                        show = True
+                        zone.SetWidth(90)
+                        opponent = True
+                for i in imgCardInfo:
+                    if i.collidepoint(event.pos):
+                        show = False
 
         zone.Field(x, y, w, h)
         zone.MyLifePoint(1450, 20)
@@ -331,16 +356,31 @@ def PlayGame(myDB):
             n = n + 1
 
         n = 0
+        opLst = []
         while n < len(myOpHand) and n < len(myOpCardHand):
-            lst.append(screen.blit(myOpHand[n], myOpCardHand[n]))
+            opLst.append(screen.blit(myOpHand[n], myOpCardHand[n]))
             n = n + 1
 
+        imgCardInfo = []
+        action = []
         if show:
-            screen.blit(card, cardInfo)
+            imgCardInfo.append(screen.blit(card, cardInfo))
+
+            action.append(pygame.draw.rect(screen, 'red', (0, 700, 200, 30)))
+            textSurface = myfont.render('Info', False, (0, 0, 0))
+            screen.blit(textSurface, (80, 700))
+
+            if not opponent:
+                action.append(pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30)))
+                textSurface = myfont.render('Summon', False, (0, 0, 0))
+                screen.blit(textSurface, (buttonX, buttonY - 70))
+
+                action.append(pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30)))
+                textSurface = myfont.render('Set', False, (0, 0, 0))
+                screen.blit(textSurface, (buttonX, buttonY - 35))
 
         pygame.display.flip()
         #dt = clock.tick(60) / 1000
-
     pygame.quit()
 
 def DeleteCard(deckNPC, file):
