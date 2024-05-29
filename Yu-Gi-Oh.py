@@ -243,6 +243,8 @@ def Main_Window(myDB):
 def PlayGame(myDB):
     pygame.init()
     myfont = pygame.font.SysFont('arial', 30)
+    infoCard = pygame.font.SysFont('arial', 30)
+    cardText = pygame.font.SysFont('arial', 25)
     screen = pygame.display.set_mode((0, 0))
     zone = Field(myDB, screen)
     zone.SetCards()
@@ -258,6 +260,7 @@ def PlayGame(myDB):
     clock = pygame.time.Clock()
     running = True
     show = False
+    cardInformation = ()
 
     dt = 0
     h = 10
@@ -267,6 +270,7 @@ def PlayGame(myDB):
     opX = 1045
     opY = -190
     opponent = False
+    gameCardInfo = False
 
     buttonX = 0
     buttonY = 0
@@ -320,27 +324,44 @@ def PlayGame(myDB):
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
                         card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
                         show = True
                         zone.SetWidth(90)
                         opponent = False
+                        gameCardInfo = False
                 for i in opLst:
                     if i.collidepoint(event.pos):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
                         card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
                         show = True
                         zone.SetWidth(90)
                         opponent = True
+                        gameCardInfo = False
                 for i in imgCardInfo:
                     if i.collidepoint(event.pos):
                         show = False
+                for i  in action:
+                    if i[0] == 'Info':
+                        if i[1].collidepoint(event.pos):
+                            gameCardInfo = True
+                    if i[0] == 'Summon':
+                        if i[1].collidepoint(event.pos):
+                            print(i[0] + ': ' + cardInformation[1])
+                    if i[0] == 'Set':
+                        if i[1].collidepoint(event.pos):
+                            print(i[0] + ': ' + cardInformation[1])
+                    if i[0] == 'Activate':
+                        if i[1].collidepoint(event.pos):
+                            print(i[0] + ': ' + cardInformation[1])
 
         zone.Field(x, y, w, h)
         zone.MyLifePoint(1450, 20)
@@ -366,22 +387,60 @@ def PlayGame(myDB):
         if show:
             imgCardInfo.append(screen.blit(card, cardInfo))
 
-            action.append(pygame.draw.rect(screen, 'red', (0, 700, 200, 30)))
+            action.append(['Info', pygame.draw.rect(screen, 'red', (0, 700, 200, 30))])
             textSurface = myfont.render('Info', False, (0, 0, 0))
             screen.blit(textSurface, (80, 700))
 
             if not opponent:
-                action.append(pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30)))
-                textSurface = myfont.render('Summon', False, (0, 0, 0))
-                screen.blit(textSurface, (buttonX, buttonY - 70))
+                if (cardInformation[3] == 'spell'):
+                    action.append(['Activate', pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30))])
+                    textSurface = myfont.render('Activate', False, (0, 0, 0))
+                    screen.blit(textSurface, (buttonX, buttonY - 70))
 
-                action.append(pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30)))
+                if (cardInformation[3] == 'normal' or cardInformation[3] == 'effect'):
+                    action.append(['Summon', pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30))])
+                    textSurface = myfont.render('Summon', False, (0, 0, 0))
+                    screen.blit(textSurface, (buttonX, buttonY - 70))
+
+                action.append(['Set', pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30))])
                 textSurface = myfont.render('Set', False, (0, 0, 0))
                 screen.blit(textSurface, (buttonX, buttonY - 35))
+
+            if gameCardInfo:
+                pygame.draw.rect(screen, 'grey', (250, 100, 1035, 600))
+                pygame.draw.rect(screen, 'black', (252, 102, 1031, 50))
+                textSurface = infoCard.render(cardInformation[1], False, (255, 255, 255))
+                screen.blit(textSurface, (260, 110))
+                pygame.draw.rect(screen, 'black', (252, 154, 1031, 42))
+                if (cardInformation[3] == 'normal' or cardInformation[3] == 'effect'):
+                    textSurface = infoCard.render(cardInformation[5] + '    level: ' + str(cardInformation[9]) + '    ATK: ' + str(cardInformation[7]) + '    DEF: ' + str(cardInformation[8]), False, (255, 255, 255))
+                    screen.blit(textSurface, (260, 158))
+                elif (cardInformation[3] == 'spell' or cardInformation[3] == 'trap'):
+                    textSurface = infoCard.render(cardInformation[5], False, (255, 255, 255))
+                    screen.blit(textSurface, (260, 158))
+                pygame.draw.rect(screen, 'black', (252, 198, 1031, 500))
+                Text_Blit(screen, cardText, cardInformation[4], 1031)
 
         pygame.display.flip()
         #dt = clock.tick(60) / 1000
     pygame.quit()
+
+def Text_Blit(screen, infoCard, text, maxWidth):
+    words = text.split(' ')
+    space = infoCard.size(' ')[0]
+    n = 0
+    sum = 0
+    heightSum = 0
+    for i in words:
+        if (sum + infoCard.size(words[n])[0] + space + 16) > maxWidth :
+            sum = 0
+            heightSum = heightSum + infoCard.size(' ')[1]
+
+        textSurface = infoCard.render(i, False, (255, 255, 255))
+        screen.blit(textSurface, (260 + sum, 206 + heightSum))
+        sum = sum + infoCard.size(words[n])[0] + space
+        n = n + 1
+
 
 def DeleteCard(deckNPC, file):
     n = deckNPC.selection()
