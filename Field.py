@@ -37,6 +37,12 @@ class Field():
         self.opExtraDeck = []
         self.opLifePoints = 8000
 
+    def GetCard(self, id):
+        myCursor = self.myDB.cursor()
+        myCursor.execute("SELECT * FROM cards WHERE id = '" + id + "'")
+        cardInfo = myCursor.fetchall()
+        return cardInfo
+
     def Field(self, x, y, w, h):
         # self.DrawBox(400 + (self.GetHeight() + 30) * n, 20 + (self.GetHeight() + 10) * m)
         self.DrawBox(x + (self.GetHeight() + w) * -1, y + (self.GetHeight() + h) * 0)
