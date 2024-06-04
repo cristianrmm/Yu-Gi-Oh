@@ -256,6 +256,8 @@ def PlayGame(myDB):
     myOpHand = []
     myCardHand = []
     myOpCardHand = []
+    monsters = []
+    monsterZone = []
     pygame.display.set_caption('Play Yu_Gi_Oh')
     clock = pygame.time.Clock()
     running = True
@@ -269,6 +271,7 @@ def PlayGame(myDB):
     y = 90
     opX = 1045
     opY = -190
+    oldid = ''
     opponent = False
     gameCardInfo = False
 
@@ -287,18 +290,11 @@ def PlayGame(myDB):
     oponentHidenCard = hidden.get_rect()
     oponentHidenCard.topleft = (x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
 
-    n = 0
-    for i in hand:
-        myHand.append(pygame.image.load('images/' + i + '.jpg'))
-        myHand[len(myHand) - 1] = pygame.transform.scale(myHand[len(myHand) - 1], (zone.GetWidth(), zone.GetHeight()))
-        myCardHand.append(myHand[len(myHand) - 1].get_rect())
-        myCardHand[len(myCardHand) - 1].topleft = (x + (zone.GetHeight() - 1 * w) * n, y + (zone.GetHeight() + h) * 5)
-        zone.SetPosToCard(str(x + (zone.GetHeight() - 1 * w) * n) +  str(y + (zone.GetHeight() + h) * 5) , i)
-        n = n + 1
+    showHand(zone, hand, myHand, myCardHand, x, y, w, h)
 
     n = 0
     for i in opHand:
-        myOpHand.append(pygame.image.load('images/' + i + '.jpg'))
+        myOpHand.append(pygame.image.load('images/' + '000' + '.png'))
         myOpHand[len(myOpHand) - 1] = pygame.transform.scale(myOpHand[len(myOpHand) - 1], (zone.GetWidth(), zone.GetHeight()))
         myOpHand[len(myOpHand) - 1] = pygame.transform.rotate(myOpHand[len(myOpHand) -1], 180)
         myOpCardHand.append(myOpHand[len(myOpHand) - 1].get_rect())
@@ -309,7 +305,7 @@ def PlayGame(myDB):
             zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) +  str(0) , i)
         n = n + 1
 
-    print(zone.fieldInfo)
+
     while running:
         screen.fill('black')
         for event in pygame.event.get():
@@ -328,9 +324,25 @@ def PlayGame(myDB):
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
+                        zone.SetWidth(90)
                         show = True
                         zone.SetWidth(90)
                         opponent = False
+                        gameCardInfo = False
+                for i in myField:
+                    if i.collidepoint(event.pos):
+                        buttonX = i.topleft[0]
+                        buttonY = i.topleft[1]
+                        zone.SetWidth(200)
+                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
+                        cardInfo = hidden.get_rect()
+                        cardInfo.topleft = (0, 400)
+                        zone.SetWidth(90)
+                        show = True
+                        zone.SetWidth(90)
+                        opponent = True
                         gameCardInfo = False
                 for i in opLst:
                     if i.collidepoint(event.pos):
@@ -342,8 +354,8 @@ def PlayGame(myDB):
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
-                        show = True
                         zone.SetWidth(90)
+                        show = True
                         opponent = True
                         gameCardInfo = False
                 for i in imgCardInfo:
@@ -355,7 +367,11 @@ def PlayGame(myDB):
                             gameCardInfo = True
                     if i[0] == 'Summon':
                         if i[1].collidepoint(event.pos):
-                            print(i[0] + ': ' + cardInformation[1])
+                            zone.command(screen, myHand, myCardHand, i[0], cardInformation, monsters, monsterZone)
+                            show = False
+                            myHand = []
+                            myCardHand = []
+                            showHand(zone, hand, myHand, myCardHand, x, y, w, h)
                     if i[0] == 'Set':
                         if i[1].collidepoint(event.pos):
                             print(i[0] + ': ' + cardInformation[1])
@@ -369,6 +385,12 @@ def PlayGame(myDB):
 
         screen.blit(hidden, myHiddenCard)
         screen.blit(hidden, oponentHidenCard)
+
+        n = 0
+        myField = []
+        while n < len(monsters) and n < len(monsterZone):
+            myField.append(screen.blit(monsters[n], monsterZone[n]))
+            n = n + 1
 
         n = 0
         lst = []
@@ -424,6 +446,16 @@ def PlayGame(myDB):
         pygame.display.flip()
         #dt = clock.tick(60) / 1000
     pygame.quit()
+
+def showHand(zone, hand, myHand, myCardHand, x, y, w, h):
+    n = 0
+    for i in hand:
+        myHand.append(pygame.image.load('images/' + i + '.jpg'))
+        myHand[len(myHand) - 1] = pygame.transform.scale(myHand[len(myHand) - 1], (zone.GetWidth(), zone.GetHeight()))
+        myCardHand.append(myHand[len(myHand) - 1].get_rect())
+        myCardHand[len(myCardHand) - 1].topleft = (x + (zone.GetHeight() - 1 * w) * n, y + (zone.GetHeight() + h) * 5)
+        zone.SetPosToCard(str(x + (zone.GetHeight() - 1 * w) * n) +  str(y + (zone.GetHeight() + h) * 5) , i)
+        n = n + 1
 
 def Text_Blit(screen, infoCard, text, maxWidth):
     words = text.split(' ')
