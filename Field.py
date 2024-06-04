@@ -18,6 +18,8 @@ class Field():
         self.id = {}
         self.deck = []
         self.hand = []
+        self.monsters = []
+        self.monsterImage = []
         self.monsterzone = []
         self.spelltrapzone = []
         self.graveYeard = []
@@ -30,12 +32,31 @@ class Field():
         self.opDeck = []
         self.opHand = []
         self.opMonsterzone = []
-        self.opSpelltrapzone = []
         self.opGraveYeard = []
         self.opOutOfPlay = []
+        self.opSpelltrapzon = []
         self.opMainDeck = []
         self.opExtraDeck = []
         self.opLifePoints = 8000
+        self.screen = pygame.display.set_mode((0, 0))
+
+    def command(self, screen, myHand, myCardHand, command, card, monsterImage, monsterZone):
+        if command == 'Summon':
+            for i in self.hand:
+                del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
+            myHand.remove(myHand[(self.hand.index(str(card[0])))])
+            myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
+            self.hand.remove(str(card[0]))
+            self.monsters.append(str(card[0]))
+
+            n = 0
+            for i in self.monsters:
+                monsterImage.append(pygame.image.load('images/' + i + '.jpg'))
+                monsterImage[len(monsterImage) - 1] = pygame.transform.scale(monsterImage[len(monsterImage) - 1], (self.GetWidth(), self.GetHeight()))
+                monsterZone.append(monsterImage[len(monsterImage) - 1].get_rect())
+                monsterZone[len(monsterZone) - 1].topleft = (1044 - n * 161, 513)
+                self.SetPosToCard(str(1044 - n * 161) + str(513), i)
+                n = n + 1
 
     def GetCard(self, id):
         myCursor = self.myDB.cursor()
@@ -87,6 +108,13 @@ class Field():
 
     def GetPosToCard(self, key):
         return self.id[key]
+
+    def GetId(self):
+        return self.id
+
+    def DeleteKey(self, key):
+        decriptKey = str(key.topleft[0]) + str(key.topleft[1])
+        del self.id[decriptKey]
 
     def SetCards(self):
         getDeck = self.myDB.cursor()
