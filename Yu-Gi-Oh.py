@@ -258,6 +258,10 @@ def PlayGame(myDB):
     myOpCardHand = []
     monsters = []
     monsterZone = []
+    fieldImage = []
+    fieldZone = []
+    spellTrap = []
+    spellTrapZone = []
     pygame.display.set_caption('Play Yu_Gi_Oh')
     clock = pygame.time.Clock()
     running = True
@@ -329,7 +333,22 @@ def PlayGame(myDB):
                         zone.SetWidth(90)
                         opponent = False
                         gameCardInfo = False
-                for i in myField:
+                for i in myMonsterField:
+                    if i.collidepoint(event.pos):
+                        buttonX = i.topleft[0]
+                        buttonY = i.topleft[1]
+                        zone.SetWidth(200)
+                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
+                        cardInfo = hidden.get_rect()
+                        cardInfo.topleft = (0, 400)
+                        zone.SetWidth(90)
+                        show = True
+                        zone.SetWidth(90)
+                        opponent = True
+                        gameCardInfo = False
+                for i in mySpellTrapField:
                     if i.collidepoint(event.pos):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
@@ -358,6 +377,20 @@ def PlayGame(myDB):
                         show = True
                         opponent = True
                         gameCardInfo = False
+                for i in myFieldZone:
+                    if i.collidepoint(event.pos):
+                        buttonX = i.topleft[0]
+                        buttonY = i.topleft[1]
+                        zone.SetWidth(200)
+                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
+                        cardInfo = hidden.get_rect()
+                        cardInfo.topleft = (0, 400)
+                        zone.SetWidth(90)
+                        show = True
+                        opponent = True
+                        gameCardInfo = False
                 for i in imgCardInfo:
                     if i.collidepoint(event.pos):
                         show = False
@@ -365,19 +398,13 @@ def PlayGame(myDB):
                     if i[0] == 'Info':
                         if i[1].collidepoint(event.pos):
                             gameCardInfo = True
-                    if i[0] == 'Summon':
+                    if i[0] in ['Summon', 'Set', 'Activate']:
                         if i[1].collidepoint(event.pos):
-                            zone.command(screen, myHand, myCardHand, i[0], cardInformation, monsters, monsterZone)
+                            zone.command(screen, myHand, myCardHand, i[0], cardInformation, monsters, monsterZone, spellTrap, spellTrapZone, fieldImage, fieldZone)
                             show = False
                             myHand = []
                             myCardHand = []
                             showHand(zone, hand, myHand, myCardHand, x, y, w, h)
-                    if i[0] == 'Set':
-                        if i[1].collidepoint(event.pos):
-                            print(i[0] + ': ' + cardInformation[1])
-                    if i[0] == 'Activate':
-                        if i[1].collidepoint(event.pos):
-                            print(i[0] + ': ' + cardInformation[1])
 
         zone.Field(x, y, w, h)
         zone.MyLifePoint(1450, 20)
@@ -386,10 +413,21 @@ def PlayGame(myDB):
         screen.blit(hidden, myHiddenCard)
         screen.blit(hidden, oponentHidenCard)
 
+
+        myFieldZone = []
+        if len(fieldImage) > 0 and len(fieldZone) > 0:
+            myFieldZone.append(screen.blit(fieldImage[0], fieldZone[0]))
+
         n = 0
-        myField = []
+        mySpellTrapField = []y
+        while n < len(spellTrap) and n < len(spellTrapZone):
+            mySpellTrapField.append(screen.blit(spellTrap[n], spellTrapZone[n]))
+            n = n + 1
+
+        n = 0
+        myMonsterField = []
         while n < len(monsters) and n < len(monsterZone):
-            myField.append(screen.blit(monsters[n], monsterZone[n]))
+            myMonsterField.append(screen.blit(monsters[n], monsterZone[n]))
             n = n + 1
 
         n = 0
