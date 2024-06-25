@@ -13,6 +13,7 @@ from PIL import ImageTk, Image
 from Filter import  Filter
 from DB_Save import DB_Save
 from Field import Field
+from CardEffects import CardEffects
 import pygame
 
 def main():
@@ -247,6 +248,9 @@ def PlayGame(myDB):
     cardText = pygame.font.SysFont('arial', 25)
     screen = pygame.display.set_mode((0, 0))
     zone = Field(myDB, screen)
+    myCardEffects = CardEffects(myDB)
+    myCardEffects.SetDeck()
+    myCardEffects.SetHand()
     zone.SetCards()
     zone.GetDeckString()
     zone.OpGetDeckString()
@@ -256,11 +260,11 @@ def PlayGame(myDB):
     myOpHand = []
     myCardHand = []
     myOpCardHand = []
-    monsters = []
+    monstersImage = []
     monsterZone = []
     fieldImage = []
     fieldZone = []
-    spellTrap = []
+    spellTrapImage = []
     spellTrapZone = []
     pygame.display.set_caption('Play Yu_Gi_Oh')
     clock = pygame.time.Clock()
@@ -283,6 +287,7 @@ def PlayGame(myDB):
     buttonY = 0
 
     zone.SetWidth(90)
+    myCardEffects.SetWidth(90)
     hidden = pygame.image.load('images/000.png')
     hidden = pygame.transform.scale(hidden, (zone.GetWidth(), zone.GetHeight()))
     myHiddenCard = hidden.get_rect()
@@ -400,7 +405,10 @@ def PlayGame(myDB):
                             gameCardInfo = True
                     if i[0] in ['Summon', 'Set', 'Activate']:
                         if i[1].collidepoint(event.pos):
-                            zone.command(screen, myHand, myCardHand, i[0], cardInformation, monsters, monsterZone, spellTrap, spellTrapZone, fieldImage, fieldZone)
+                            myCardEffects.Command(0, i[0], cardInformation)
+                            #zone.command(screen, myHand, myCardHand, i[0], cardInformation, monstersImage, monsterZone, spellTrapImage, spellTrapZone, fieldImage, fieldZone)
+                            monstersImage = myCardEffects.GetMyMonsterImage()[0]
+                            monsterZone = myCardEffects.GetMyMonsterZone()[0]
                             show = False
                             myHand = []
                             myCardHand = []
@@ -419,15 +427,16 @@ def PlayGame(myDB):
             myFieldZone.append(screen.blit(fieldImage[0], fieldZone[0]))
 
         n = 0
-        mySpellTrapField = []y
-        while n < len(spellTrap) and n < len(spellTrapZone):
-            mySpellTrapField.append(screen.blit(spellTrap[n], spellTrapZone[n]))
+        mySpellTrapField = []
+        while n < len(spellTrapImage) and n < len(spellTrapZone):
+            mySpellTrapField.append(screen.blit(spellTrapImage[n], spellTrapZone[n]))
             n = n + 1
 
         n = 0
         myMonsterField = []
-        while n < len(monsters) and n < len(monsterZone):
-            myMonsterField.append(screen.blit(monsters[n], monsterZone[n]))
+        while n < len(monstersImage) and n < len(monsterZone):
+            if monstersImage[n] != 'empty':
+                myMonsterField.append(screen.blit(monstersImage[n], monsterZone[n]))
             n = n + 1
 
         n = 0
