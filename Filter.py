@@ -1,237 +1,341 @@
-class Filter():
-    def __init__(self, myDB):
-        self.indexFrame = 0
-        self.indexArche = 0
-        self.indexRace = 0
-        self.indexLevel = 0
-        self.indexAttribute = 0
-        self.indexAttack = 0
-        self.indexDefense = 0
-        self.frame = 'all'
-        self.archeType = 'all'
-        self.race = 'all'
-        self.level = 'all'
-        self.attribute = 'all'
-        self.attack = 'all'
-        self.defense = 'all'
-        self.getMyCards = ['all', 'all', 'all', 'all', 'all', 'all', 'all']
-        self.getMyPreviousCards = ['all', 'all', 'all', 'all', 'all', 'all', 'all']
-        self.mydb = myDB
+import numpy.random
+import pygame
+import math
 
-    def SetPrevious(self, type,  index, frameType):
-        if (type == 'frame'):
-            self.getMyPreviousCards[0] = frameType
-            self.indexFrame = index
-        elif (type == 'arche'):
-            self.getMyPreviousCards[1] = frameType
-            self.indexArche = index
-        elif (type == 'race'):
-            self.getMyPreviousCards[2] = frameType
-            self.indexRace = index
-        elif (type == 'level'):
-            self.getMyPreviousCards[3] = frameType
-            self.indexLevel = index
-        elif (type == 'attribute'):
-            self.getMyPreviousCards[4] = frameType
-            self.indexAttribute = index
-        elif (type == 'attack'):
-            self.getMyPreviousCards[5] = frameType
-            self.indexAttack = index
-        elif (type == 'defense'):
-            self.getMyPreviousCards[5] = frameType
-            self.indexDefense = index
 
-    def GetPrevious(self, type, frameType):
-        if (type == 'frame'):
-            self.frame = self.getMyPreviousCards[0]
-            return self.indexFrame
-        elif (type == 'arche'):
-            self.archeType = self.getMyPreviousCards[1]
-            return self.indexArche
-        elif (type == 'race'):
-            self.race = self.getMyPreviousCards[2]
-            return self.indexRace
-        elif (type == 'level'):
-            self.level = self.getMyPreviousCards[3]
-            return self.indexLevel
-        elif (type == 'attribute'):
-            self.attribute = self.getMyPreviousCards[4]
-            return self.indexAttribute
-        elif (type == 'attack'):
-            self.attack = self.getMyPreviousCards[4]
-            return self.indexAttack
-        elif (type == 'defense'):
-            self.defense = self.getMyPreviousCards[4]
-            return self.indexDefense
+class Field():
+    def __init__(self, myDB, screen):
+        self.myDB = myDB
+        self.screen = screen
+        self.RATIO = 397/271
+        self.width = 0
+        self.height = 0
 
-    def FrameType(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT frameType FROM cards")
-        set = ['all']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            set.append(i[0])
-        return set
+        self.phase = ['Draw Phace', 'Standby Phase', 'Main Phase1', 'Battale Phase', 'Main Phase2', 'End Phase']
 
-    def RaceType(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT race FROM cards WHERE frameType != 'skill' ORDER BY race")
-        set = ['all']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            set.append(i[0])
-        return set
+        self.fieldInfo = ''
 
-    def Level(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT level FROM cards WHERE level > '0' ORDER BY CAST(level AS SIGNED INTEGER)")
-        set = ['all']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            set.append(i[0])
-        return set
+        self.id = {}
+        self.deck = []
+        self.hand = []
+        self.monsters = []
+        self.monsterImage = []
+        self.monsterzone = []
+        self.spelltrapzone = []
+        self.fieldZone = []
+        self.graveYeard = []
+        self.outOfPlay = []
+        self.mainDeck = []
+        self.extraDeck = []
+        self.lifePoints = 8000
 
-    def Attribute(self):
-        cardFrame =  self.mydb.cursor()
-        cardFrame.execute("SELECT attribute FROM cards")
-        set = ['all']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            if i[0] == "":
-                set.append('undefined')
-            else:
-                set.append(i[0])
-        return set
+        self.opId = {}
+        self.opDeck = []
+        self.opHand = []
+        self.opMonsterzone = []
+        self.opGraveYeard = []
+        self.opOutOfPlay = []
+        self.opSpelltrapzon = []
+        self.opFieldZone = []
+        self.opMainDeck = []
+        self.opExtraDeck = []
+        self.opLifePoints = 8000
+        self.screen = pygame.display.set_mode((0, 0))
 
-    def ArcheType(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT archetype FROM cards ORDER BY archetype")
-        set = ['all']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            if i[0] == "":
-                set.append('undefined')
-            else:
-                set.append(i[0])
-        return set
+    def command(self, screen, myHand, myCardHand, command, card, monsterImage, monsterZone, spellTrapImage, spellTrapZone, fieldImage, fieldZone):
+        h = (self.GetHeight() - self.GetWidth()) / 2
+        for i in self.hand:
+            del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
+        myHand.remove(myHand[(self.hand.index(str(card[0])))])
+        myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
+        self.hand.remove(str(card[0]))
 
-    def Attack(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT atk FROM cards WHERE atk > '0' ORDER BY CAST(atk AS SIGNED INTEGER)")
-        set = ['all', '0']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            set.append(i[0])
-        return set
+        if command == 'Summon':
+            self.ChangeCardSet(str(card[0]), 'H', 'FAP')
+            self.monsters.append(str(card[0]))
 
-    def Defense(self):
-        cardFrame = self.mydb.cursor()
-        cardFrame.execute("SELECT def FROM cards WHERE def > '0' ORDER BY CAST(def AS SIGNED INTEGER)")
-        set = ['all', '0']
-        for i in self.UniqueSet(cardFrame.fetchall()):
-            set.append(i[0])
-        return set
-
-    def GetCardInfo(self, cardType, info):
-        if cardType == 'frame':
-            self.frame = info
-        elif cardType == 'arche':
-            self.archeType = info
-        elif cardType == 'race':
-            self.race = info
-        elif cardType == 'level':
-            self.level = info
-        elif cardType == 'attribute':
-            self.attribute = info
-        elif cardType == 'attack':
-            self.attack = info
-        elif cardType == 'defense':
-            self.defense = info
-
-    def GetAllCards(self):
-        card = self.mydb.cursor()
-        frame = ''
-        archType = ''
-        race = ''
-        level = ''
-        attribute = ''
-        attack = ''
-        defense = ''
-        myset = ''
-
-        set = []
-        if (self.frame != 'all'):
-            frame = "frameType LIKE '" + self.frame + "'"
-            set.append(frame)
-
-        if (self.archeType != 'all' and self.archeType != 'undefined'):
-            archType = "archeType LIKE (%s)"
-            set.append(archType)
-        elif(self.archeType == 'undefined'):
-            archType = "archeType LIKE ''"
-            set.append(archType)
-
-        if (self.race != 'all'):
-            race = "race LIKE '" + self.race + "'"
-            set.append(race)
-
-        if (self.level != 'all'):
-            level = "level LIKE '" + self.level + "'"
-            set.append(level)
-
-        if (self.attack != 'all'):
-            attack = "atk LIKE '" + self.attack + "'"
-            set.append(attack)
-
-        if (self.defense != 'all'):
-            defense = "def LIKE '" + self.defense + "'"
-            set.append(defense)
-
-        if (self.attribute != 'all' and self.attribute != 'undefined'):
-            attribute = "attribute LIKE '" + self.attribute  + "'"
-        elif (self.attribute == 'undefined'):
-            attribute = "attribute LIKE ''"
-
-        self.getMyCards[0] = frame
-        self.getMyCards[1] = archType
-        self.getMyCards[2] = race
-        self.getMyCards[3] = level
-        self.getMyCards[4] = attribute
-        self.getMyCards[5] = attack
-        self.getMyCards[6] = defense
-
-        if len(self.getMyCards) > 1:
             n = 0
-            for i in self.getMyCards:
-                if len(i) > 0 and n == 0:
-                    myset = myset + str(i)
+            for i in self.monsters:
+                if (str(1044 - n * 161 - int(h)) + str(513 + int(h)) not in self.id):
+                    monsterImage.append(pygame.image.load('images/' + i + '.jpg'))
+                    monsterImage[len(monsterImage) - 1] = pygame.transform.scale(monsterImage[len(monsterImage) - 1],
+                                                                                 (self.GetWidth(), self.GetHeight()))
+                    monsterZone.append(monsterImage[len(monsterImage) - 1].get_rect())
+                    monsterZone[len(monsterZone) - 1].topleft = (1044 - n * 161, 513)
+                    self.SetPosToCard(str(1044 - n * 161) + str(513), i)
+                n = n + 1
+
+        elif command == 'Set':
+            if card[3] in ['normal', 'effect']:
+                self.ChangeCardSet(str(card[0]), 'H', 'FDP')
+                self.monsters.append(str(card[0]))
+                n = 0
+                for i in self.monsters:
+                    if (str(1044 - n * 161) + str(513) not in self.id):
+                        monsterImage.append(pygame.image.load('images/' + '000' + '.png'))
+                        monsterImage[len(monsterImage) - 1] = pygame.transform.scale(monsterImage[len(monsterImage) - 1],(self.GetWidth(), self.GetHeight()))
+                        monsterImage[len(monsterImage) - 1] = pygame.transform.rotate(monsterImage[len(monsterImage) - 1], 270)
+                        monsterZone.append(monsterImage[len(monsterImage) - 1].get_rect())
+                        monsterZone[len(monsterZone) - 1].topleft = (1044 - n * 161 - int(h), 513 + int(h))
+                        self.SetPosToCard(str(1044 - n * 161 - int(h)) + str(513 + int(h)), i)
                     n = n + 1
-                elif len(i) != 0 and n != 0:
-                    myset = myset + " AND " + str(i)
 
-        code = "SELECT id, name, description, frameType, card_index FROM cards WHERE " + myset
+            elif card[3] in ['spell', 'trap']:
+                if card[5] != 'Field':
+                    self.ChangeCardSet(str(card[0]), 'H', 'FD')
+                    self.spelltrapzone.append(str(card[0]))
+                    n = 0
+                    for i in self.spelltrapzone:
+                        if ((str(1044 - n * 161) + str(654)) not in self.id):
+                            spellTrapImage.append(pygame.image.load('images/' + '000' + '.png'))
+                            spellTrapImage[len(spellTrapImage) - 1] = pygame.transform.scale(spellTrapImage[len(spellTrapImage) - 1],(self.GetWidth(), self.GetHeight()))
+                            spellTrapZone.append(spellTrapImage[len(spellTrapImage) - 1].get_rect())
+                            spellTrapZone[len(spellTrapZone) - 1].topleft = (1044 - n * 161, 654)
+                            self.SetPosToCard(str(1044 - n * 161) + str(654), i)
+                        n = n + 1
+                else:
+                    self.ChangeCardSet(str(card[0]), 'H', 'FD')
+                    self.fieldZone.append(str(card[0]))
+                    n = 0
+                    for i in self.fieldZone:
+                        if ((str(1044 - n * 161) + str(654)) not in self.id):
+                            fieldImage.append(pygame.image.load('images/' + '000' + '.png'))
+                            fieldImage[len(fieldImage) - 1] = pygame.transform.scale(fieldImage[len(fieldImage) - 1],(self.GetWidth(), self.GetHeight()))
+                            fieldZone.append(fieldImage[len(fieldImage) - 1].get_rect())
+                            fieldZone[len(fieldZone) - 1].topleft = (239, 513)
+                            self.SetPosToCard(str(239) + str(513), i)
+                        n = n + 1
 
-        if (self.frame == 'all' and self.archeType == 'all' and self.race == 'all' and self.level == 'all' and self.attribute == 'all' and self.attack == 'all' and self.defense == 'all'):
-            card.execute("SELECT id, name, description, frameType, card_index FROM cards")
-        elif (self.archeType == 'all'):
-            card.execute(code)
-        elif (self.archeType == 'undefined'):
-            card.execute(code)
-        else:
-            card.execute(code, (self.archeType,))
+        elif command == 'Activate':
+            if card[5] != 'Field':
+                self.ChangeCardSet(str(card[0]), 'H', 'A')
+                self.spelltrapzone.append(str(card[0]))
+                n = 0
+                for i in self.spelltrapzone:
+                    if ((str(1044 - n * 161) + str(654)) not in self.id):
+                        spellTrapImage.append(pygame.image.load('images/' + i + '.jpg'))
+                        spellTrapImage[len(spellTrapImage) - 1] = pygame.transform.scale(spellTrapImage[len(spellTrapImage) - 1],
+                                                                               (self.GetWidth(), self.GetHeight()))
+                        spellTrapZone.append(spellTrapImage[len(spellTrapImage) - 1].get_rect())
+                        spellTrapZone[len(spellTrapZone) - 1].topleft = (1044 - n * 161, 654)
+                        self.SetPosToCard(str(1044 - n * 161) + str(654), i)
+                    n = n + 1
 
-        return card.fetchall()
+            else:
+                self.ChangeCardSet(str(card[0]), 'H', 'FD')
+                self.fieldZone.append(str(card[0]))
+                n = 0
+                for i in self.fieldZone:
+                    if ((str(1044 - n * 161) + str(654)) not in self.id):
+                        fieldImage.append(pygame.image.load('images/' + i + '.jpg'))
+                        fieldImage[len(fieldImage) - 1] = pygame.transform.scale(fieldImage[len(fieldImage) - 1],(self.GetWidth(), self.GetHeight()))
+                        fieldZone.append(fieldImage[len(fieldImage) - 1].get_rect())
+                        fieldZone[len(fieldZone) - 1].topleft = (239, 513)
+                        self.SetPosToCard(str(239) + str(513), i)
+                    n = n + 1
 
-    def UniqueSet(self, cardsInfo):
-        count = len(cardsInfo)
+    def GetCard(self, id):
+        myCursor = self.myDB.cursor()
+        myCursor.execute("SELECT * FROM cards WHERE id = '" + id + "'")
+        cardInfo = myCursor.fetchall()
+        return cardInfo
+
+    def Field(self, x, y, w, h):
+        # self.DrawBox(400 + (self.GetHeight() + 30) * n, 20 + (self.GetHeight() + 10) * m)
+        self.DrawBox(x + (self.GetHeight() + w) * -1, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 0, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 1, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 2, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 3, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 4, y + (self.GetHeight() + h) * 0)
+        self.DrawBox(x + (self.GetHeight() + w) * 5, y + (self.GetHeight() + h) * 0)
+
+        self.DrawBox(x + (self.GetHeight() + w) * -2, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * -1, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 0, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 1, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 2, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 3, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 4, y + (self.GetHeight() + h) * 1)
+        self.DrawBox(x + (self.GetHeight() + w) * 5, y + (self.GetHeight() + h) * 1)
+
+        self.DrawBox(x + (self.GetHeight() + w) * 1, y + (self.GetHeight() + h) * 2)
+        self.DrawBox(x + (self.GetHeight() + w) * 3, y + (self.GetHeight() + h) * 2)
+
+        self.DrawBox(x + (self.GetHeight() + w) * -1, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 0, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 1, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 2, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 3, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 4, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 5, y + (self.GetHeight() + h) * 3)
+        self.DrawBox(x + (self.GetHeight() + w) * 6, y + (self.GetHeight() + h) * 3)
+
+        self.DrawBox(x + (self.GetHeight() + w) * -1, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 0, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 1, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 2, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 3, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 4, y + (self.GetHeight() + h) * 4)
+        self.DrawBox(x + (self.GetHeight() + w) * 5, y + (self.GetHeight() + h) * 4)
+
+    def SetPosToCard(self, key, value):
+        self.id[key] = value
+
+    def GetPosToCard(self, key):
+        return self.id[key]
+
+    def GetId(self):
+        return self.id
+
+    def DeleteKey(self, key):
+        decriptKey = str(key.topleft[0]) + str(key.topleft[1])
+        del self.id[decriptKey]
+
+    def SetCards(self):
+        getDeck = self.myDB.cursor()
+        getDeck.execute("SELECT cardId FROM decks WHERE userID = 'yugi' ORDER BY name")
+        cards = getDeck.fetchall()
+        for i in cards:
+            self.deck.append(i[0])
+            self.mainDeck.append(i[0])
+        numpy.random.shuffle(self.mainDeck)
+
+        opGetDeck = self.myDB.cursor()
+        opGetDeck.execute("SELECT cardId FROM decks WHERE userID = 'yugi' ORDER BY name")
+        opCards = opGetDeck.fetchall()
+        for i in opCards:
+            self.opDeck.append(i[0])
+            self.opMainDeck.append(i[0])
+        numpy.random.shuffle(self.opMainDeck)
+
+    def GetHand(self):
+        hand = 0
+        index = 0
+        for i in reversed(self.mainDeck):
+            if hand == 5:
+                break
+            self.mainDeck.remove(i)
+            self.hand.append(i)
+            self.ChangeCardSet(i, 'D', 'H')
+            hand = hand + 1
+        return self.hand
+
+    def OpGetHand(self):
+        hand = 0
+        for i in reversed(self.opMainDeck):
+            if hand == 5:
+                break
+            self.opMainDeck.remove(i)
+            self.opHand.append(i)
+            hand = hand + 1
+        return self.opHand
+
+    def ChangeCardSet(self, i, original, newSet):
+        index = 0
+        fieldInfo = self.fieldInfo.split(':')
+        for j in fieldInfo:
+            if original + ',' + i == j:
+                fieldInfo[index] = newSet + ',' + i
+                self.fieldInfo = ':'.join(fieldInfo)
+                break
+            index = index + 1
+
+    def GetDeckString(self):
         n = 0
-        j = 0
-        myset = [cardsInfo[0]]
-        match = 0
-        same = True
-        while n < count:
-            while j < len(myset):
-                if (myset[j] == cardsInfo[n]):
-                    match = match + 1
-                j = j + 1
-            if (match == 0):
-                myset.append(cardsInfo[n])
-            match = 0
-            j = 0
-            n = n + 1
+        for i in self.deck:
+            if n > 0:
+                self.fieldInfo = self.fieldInfo + ':D,' + i
+            else:
+                self.fieldInfo = self.fieldInfo + 'D,' + i
+                n = n + 1
 
-        return myset
+    def OpGetDeckString(self):
+        fieldInfo = ''
+        n = 0
+        for i in self.opDeck:
+            if n > 0:
+                fieldInfo = fieldInfo + ':' + i
+            else:
+                fieldInfo = fieldInfo + i
+                n = n + 1
+
+    def DrawBox(self, x, y):
+        pygame.draw.line(self.screen, 'yellow', (x, y), (x + self.GetWidth(), y), 3)
+        pygame.draw.line(self.screen, 'yellow', (x + self.GetWidth(), y), (x + self.GetWidth(), y + self.GetHeight()), 3)
+        pygame.draw.line(self.screen, 'yellow', (x, y), (x, y + self.GetHeight()), 3)
+        pygame.draw.line(self.screen, 'yellow', (x, y + self.GetHeight()), (x + self.GetWidth(), y + self.GetHeight()), 3)
+
+    def SetWidth(self, length):
+        self.width = length
+
+    def GetWidth(self):
+        return self.width
+
+    def GetHeight(self):
+        return math.floor(self.width * self.RATIO)
+
+    def MyLifePoint(self, x, y):
+        l = 20
+        num = 0
+        for n in str(self.lifePoints):
+            if n == '0':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l),(x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l),(x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '1':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l),(x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '2':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l),(x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+            elif n == '3':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l), (x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '4':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '5':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l), (x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '6':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l), (x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '7':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '8':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l), (x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            elif n == '9':
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + l + num * (l + 10), y), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + l), (x + l + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y + 2 * l), (x + l + num * (l + 10), y + 2 * l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10), y), (x + num * (l + 10), y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y), (x + num * (l + 10) + l, y + l), 1)
+                pygame.draw.line(self.screen, 'red', (x + num * (l + 10) + l, y + l), (x + num * (l + 10) + l, y + 2 * l), 1)
+            num = num + 1
