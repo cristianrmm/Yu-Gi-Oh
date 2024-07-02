@@ -250,13 +250,12 @@ def PlayGame(myDB):
     zone = Field(myDB, screen)
     myCardEffects = CardEffects(myDB)
     myCardEffects.SetDeck()
-    myCardEffects.SetHand()
     zone.SetCards()
     zone.GetDeckString()
     zone.OpGetDeckString()
-    hand = zone.GetHand()
+    hand = myCardEffects.GetMyHand()
     opHand = zone.OpGetHand()
-    myHand = []
+    myHand = myCardEffects.SetHand()
     myOpHand = []
     myCardHand = []
     myOpCardHand = []
@@ -299,7 +298,7 @@ def PlayGame(myDB):
     oponentHidenCard = hidden.get_rect()
     oponentHidenCard.topleft = (x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
 
-    showHand(zone, hand, myHand, myCardHand, x, y, w, h)
+    showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h)
 
     n = 0
     for i in opHand:
@@ -309,9 +308,9 @@ def PlayGame(myDB):
         myOpCardHand.append(myOpHand[len(myOpHand) - 1].get_rect())
         myOpCardHand[len(myOpCardHand) - 1].topleft = (opX - (zone.GetHeight() - 1 * w) * n, math.floor(opY + (zone.GetHeight() + h)))
         if (opY + (zone.GetHeight() + h) > 0):
-            zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) + str(math.floor(opY + (zone.GetHeight() + h))), i)
+            myCardEffects.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) + str(math.floor(opY + (zone.GetHeight() + h))), i)
         else:
-            zone.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) +  str(0) , i)
+            myCardEffects.SetPosToCard(str(opX - (zone.GetHeight() - 1 * w) * n) +  str(0) , i)
         n = n + 1
 
 
@@ -328,8 +327,8 @@ def PlayGame(myDB):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
-                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
-                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.image.load('images/' + myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
@@ -343,8 +342,8 @@ def PlayGame(myDB):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
-                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
-                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.image.load('images/' + myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
@@ -358,8 +357,8 @@ def PlayGame(myDB):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
-                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
-                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.image.load('images/' + myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
@@ -373,8 +372,8 @@ def PlayGame(myDB):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
-                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
-                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.image.load('images/' + myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
@@ -387,8 +386,8 @@ def PlayGame(myDB):
                         buttonX = i.topleft[0]
                         buttonY = i.topleft[1]
                         zone.SetWidth(200)
-                        card = pygame.image.load('images/' + zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
-                        cardInformation = zone.GetCard(zone.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
+                        card = pygame.image.load('images/' + myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])) + '.jpg')
+                        cardInformation = zone.GetCard(myCardEffects.GetPosToCard(str(i.topleft[0]) + str(i.topleft[1])))[0]
                         card = pygame.transform.scale(card, (zone.GetWidth(), zone.GetHeight()))
                         cardInfo = hidden.get_rect()
                         cardInfo.topleft = (0, 400)
@@ -412,7 +411,7 @@ def PlayGame(myDB):
                             show = False
                             myHand = []
                             myCardHand = []
-                            showHand(zone, hand, myHand, myCardHand, x, y, w, h)
+                            showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h)
 
         zone.Field(x, y, w, h)
         zone.MyLifePoint(1450, 20)
@@ -441,8 +440,8 @@ def PlayGame(myDB):
 
         n = 0
         lst = []
-        while n < len(myHand) and n < len(myCardHand):
-            lst.append(screen.blit(myHand[n], myCardHand[n]))
+        while n < len(myCardEffects.GetMyHandImage()[0]) and n < len(myCardEffects.GetMyHandZone()[0]):
+            lst.append(screen.blit(myCardEffects.GetMyHandImage()[0][n], myCardEffects.GetMyHandZone()[0][n]))
             n = n + 1
 
         n = 0
@@ -494,14 +493,15 @@ def PlayGame(myDB):
         #dt = clock.tick(60) / 1000
     pygame.quit()
 
-def showHand(zone, hand, myHand, myCardHand, x, y, w, h):
+def showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h):
+    myCardEffects.DeleteMyHandZoneImage()
     n = 0
-    for i in hand:
-        myHand.append(pygame.image.load('images/' + i + '.jpg'))
-        myHand[len(myHand) - 1] = pygame.transform.scale(myHand[len(myHand) - 1], (zone.GetWidth(), zone.GetHeight()))
-        myCardHand.append(myHand[len(myHand) - 1].get_rect())
-        myCardHand[len(myCardHand) - 1].topleft = (x + (zone.GetHeight() - 1 * w) * n, y + (zone.GetHeight() + h) * 5)
-        zone.SetPosToCard(str(x + (zone.GetHeight() - 1 * w) * n) +  str(y + (zone.GetHeight() + h) * 5) , i)
+    for i in hand[0]:
+        myCardEffects.SetMyHandImage(0, pygame.image.load('images/' + i + '.jpg'))
+        myCardEffects.GetMyHandImage()[0][len(myCardEffects.GetMyHandImage()[0]) - 1] = pygame.transform.scale(myCardEffects.GetMyHandImage()[0][len(myCardEffects.GetMyHandImage()[0]) - 1], (myCardEffects.GetWidth(), myCardEffects.GetHeight()))
+        myCardEffects.SetMyHandZone(0, myCardEffects.GetMyHandImage()[0][len(myCardEffects.GetMyHandImage()[0]) - 1].get_rect())
+        myCardEffects.GetMyHandZone()[0][len(myCardEffects.GetMyHandZone()[0]) - 1].topleft = (x + (myCardEffects.GetHeight() - 1 * w) * n, y + (myCardEffects.GetHeight() + h) * 5)
+        myCardEffects.SetPosToCard(str(x + (myCardEffects.GetHeight() - 1 * w) * n) +  str(y + (myCardEffects.GetHeight() + h) * 5) , i)
         n = n + 1
 
 def Text_Blit(screen, infoCard, text, maxWidth):
