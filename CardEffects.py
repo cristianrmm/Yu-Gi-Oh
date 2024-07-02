@@ -9,6 +9,8 @@ class CardEffects():
         self.RATIO = 397 / 271
         self.width = 0
         self.myDb = myDb
+        self.id = {}
+
         self.myLifePoints = [8000, 8000]
         self.myDeck = []
         self.myMainDeck = []
@@ -33,6 +35,16 @@ class CardEffects():
         self.myLifePoints[n] = self.myLifePoints + lifePoint
         self.myLifePoints[n] = self.myLifePoints + lifePoint
 
+    def SetPosToCard(self, key, value):
+        self.id[key] = value
+
+    def GetPosToCard(self, key):
+        return self.id[key]
+
+    def DeleteKey(self, key):
+        decriptKey = str(key.topleft[0]) + str(key.topleft[1])
+        del self.id[decriptKey]
+
     def SetMyHand(self, n, myHand):
         if len(self.myHand) == 0:
             self.myHand.append([])
@@ -48,14 +60,18 @@ class CardEffects():
             self.myHandZone.append([])
             self.myHandZone.append([])
 
-        self.myHandZone[n] = myHandZone
+        self.myHandZone[n].append(myHandZone)
 
     def SetMyHandImage(self, n, myHandImage):
         if len(self.myHandImage) == 0:
             self.myHandImage.append([])
             self.myHandImage.append([])
 
-        self.myHandImage[n] = myHandImage
+        self.myHandImage[n].append(myHandImage)
+
+    def DeleteMyHandZoneImage(self):
+        self.myHandImage = []
+        self.myHandZone = []
 
     def SetMyMonster(self, n, myMonster):
         if len(self.myMonster) == 0:
@@ -123,6 +139,12 @@ class CardEffects():
     def SetWidth(self, width):
         self.width = width
 
+    def GetCard(self, id):
+        myCursor = self.myDb.cursor()
+        myCursor.execute("SELECT * FROM cards WHERE id = '" + id + "'")
+        cardInfo = myCursor.fetchall()
+        return cardInfo
+
     def GetWidth(self):
         return self.width
 
@@ -175,9 +197,20 @@ class CardEffects():
         return self.myFieldImage
 
     def Command(self, player, command, card):
+        print(card)
+        print(self.myHand)
+        print(self.myHandZone)
+        print(self.myHandImage)
+        print(len(self.id), self.id)
+
+
+
         if command == 'Summon':
             if (card[3] in ['effect', 'normal']):
                 if (card[9] in ['1', '2', '3', '4']):
+                    for i in self.myHand[player]:
+                        del self.id[str(self.myHandZone[player][self.myHand[player].index(i)].topleft[0]) + str(self.myHandZone[player][self.myHand[player].index(i)].topleft[1])]
+                    self.myHand[player].remove(str(card[0]))
                     n = -1
                     for i in reversed(self.myMonster[player]):
                         if i == 'empty':
@@ -191,6 +224,7 @@ class CardEffects():
                             self.myMonsterImage[player][n] = pygame.transform.scale(self.myMonsterImage[player][n], (self.GetWidth(), self.GetHeight()))
                             self.myMonsterZone[player][n] = self.myMonsterImage[player][n].get_rect()
                             self.myMonsterZone[player][n].topleft = (1044 - (4-n) * 161, 513)
+                            self.SetPosToCard(str(1044 - (4-n) * 161) + str(513), str(i))
                         n = n + 1
 
     def SetDeck(self):
@@ -216,10 +250,14 @@ class CardEffects():
 
     def SetHand(self):
         hand = 0
-        for i in reversed(self.myMainDeck):
-            if hand < 5:
-                self.myMainDeck.remove(i)
-                self.myHand.append(i)
-                hand = hand + 1
-        print(self.myHand)
-        print(len(self.myHand[0]))
+        myHand = []
+        for i in reversed(self.myMainDeck[0]):
+            if hand == 5:
+                break
+            elif len(self.myHand) > 0:
+                if len(self.myHand[len(self.myHand) - 1] == 5):
+                    break
+            self.myMainDeck[0].remove(i)
+            myHand.append(i)
+            hand = hand + 1
+        self.myHand.append(myHand)
