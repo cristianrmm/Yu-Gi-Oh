@@ -42,22 +42,24 @@ class Field():
         self.opLifePoints = 8000
         self.screen = pygame.display.set_mode((0, 0))
 
-    def command(self, screen, myHand, myCardHand, command, card, monsterImage, monsterZone, spellTrap, spellTrapZone, fieldImage, fieldZone):
+    def command(self, screen, myHand, myCardHand, command, card, monsterImage, monsterZone, spellTrapImage, spellTrapZone, fieldImage, fieldZone):
         h = (self.GetHeight() - self.GetWidth()) / 2
+        for i in self.hand:
+            del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
+        myHand.remove(myHand[(self.hand.index(str(card[0])))])
+        myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
+        self.hand.remove(str(card[0]))
+
         if command == 'Summon':
             self.ChangeCardSet(str(card[0]), 'H', 'FAP')
-            for i in self.hand:
-                del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
-            myHand.remove(myHand[(self.hand.index(str(card[0])))])
-            myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-            self.hand.remove(str(card[0]))
             self.monsters.append(str(card[0]))
 
             n = 0
             for i in self.monsters:
                 if (str(1044 - n * 161 - int(h)) + str(513 + int(h)) not in self.id):
                     monsterImage.append(pygame.image.load('images/' + i + '.jpg'))
-                    monsterImage[len(monsterImage) - 1] = pygame.transform.scale(monsterImage[len(monsterImage) - 1], (self.GetWidth(), self.GetHeight()))
+                    monsterImage[len(monsterImage) - 1] = pygame.transform.scale(monsterImage[len(monsterImage) - 1],
+                                                                                 (self.GetWidth(), self.GetHeight()))
                     monsterZone.append(monsterImage[len(monsterImage) - 1].get_rect())
                     monsterZone[len(monsterZone) - 1].topleft = (1044 - n * 161, 513)
                     self.SetPosToCard(str(1044 - n * 161) + str(513), i)
@@ -66,11 +68,6 @@ class Field():
         elif command == 'Set':
             if card[3] in ['normal', 'effect']:
                 self.ChangeCardSet(str(card[0]), 'H', 'FDP')
-                for i in self.hand:
-                    del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
-                myHand.remove(myHand[(self.hand.index(str(card[0])))])
-                myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-                self.hand.remove(str(card[0]))
                 self.monsters.append(str(card[0]))
                 n = 0
                 for i in self.monsters:
@@ -86,29 +83,18 @@ class Field():
             elif card[3] in ['spell', 'trap']:
                 if card[5] != 'Field':
                     self.ChangeCardSet(str(card[0]), 'H', 'FD')
-                    for i in self.hand:
-                        del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
-                    myHand.remove(myHand[(self.hand.index(str(card[0])))])
-                    myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-                    self.hand.remove(str(card[0]))
                     self.spelltrapzone.append(str(card[0]))
                     n = 0
                     for i in self.spelltrapzone:
                         if ((str(1044 - n * 161) + str(654)) not in self.id):
-                            spellTrap.append(pygame.image.load('images/' + '000' + '.png'))
-                            spellTrap[len(spellTrap) - 1] = pygame.transform.scale(spellTrap[len(spellTrap) - 1],(self.GetWidth(), self.GetHeight()))
-                            spellTrapZone.append(spellTrap[len(spellTrap) - 1].get_rect())
+                            spellTrapImage.append(pygame.image.load('images/' + '000' + '.png'))
+                            spellTrapImage[len(spellTrapImage) - 1] = pygame.transform.scale(spellTrapImage[len(spellTrapImage) - 1],(self.GetWidth(), self.GetHeight()))
+                            spellTrapZone.append(spellTrapImage[len(spellTrapImage) - 1].get_rect())
                             spellTrapZone[len(spellTrapZone) - 1].topleft = (1044 - n * 161, 654)
                             self.SetPosToCard(str(1044 - n * 161) + str(654), i)
                         n = n + 1
                 else:
                     self.ChangeCardSet(str(card[0]), 'H', 'FD')
-                    for i in self.hand:
-                        del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(
-                            myCardHand[self.hand.index(i)].topleft[1])]
-                    myHand.remove(myHand[(self.hand.index(str(card[0])))])
-                    myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-                    self.hand.remove(str(card[0]))
                     self.fieldZone.append(str(card[0]))
                     n = 0
                     for i in self.fieldZone:
@@ -123,41 +109,30 @@ class Field():
         elif command == 'Activate':
             if card[5] != 'Field':
                 self.ChangeCardSet(str(card[0]), 'H', 'A')
-                for i in self.hand:
-                    del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(myCardHand[self.hand.index(i)].topleft[1])]
-                myHand.remove(myHand[(self.hand.index(str(card[0])))])
-                myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-                self.hand.remove(str(card[0]))
                 self.spelltrapzone.append(str(card[0]))
                 n = 0
                 for i in self.spelltrapzone:
                     if ((str(1044 - n * 161) + str(654)) not in self.id):
-                        spellTrap.append(pygame.image.load('images/' + i + '.jpg'))
-                        spellTrap[len(spellTrap) - 1] = pygame.transform.scale(spellTrap[len(spellTrap) - 1],(self.GetWidth(), self.GetHeight()))
-                        spellTrapZone.append(spellTrap[len(spellTrap) - 1].get_rect())
+                        spellTrapImage.append(pygame.image.load('images/' + i + '.jpg'))
+                        spellTrapImage[len(spellTrapImage) - 1] = pygame.transform.scale(spellTrapImage[len(spellTrapImage) - 1],
+                                                                               (self.GetWidth(), self.GetHeight()))
+                        spellTrapZone.append(spellTrapImage[len(spellTrapImage) - 1].get_rect())
                         spellTrapZone[len(spellTrapZone) - 1].topleft = (1044 - n * 161, 654)
                         self.SetPosToCard(str(1044 - n * 161) + str(654), i)
                     n = n + 1
+
             else:
                 self.ChangeCardSet(str(card[0]), 'H', 'FD')
-                for i in self.hand:
-                    del self.id[str(myCardHand[self.hand.index(i)].topleft[0]) + str(
-                        myCardHand[self.hand.index(i)].topleft[1])]
-                myHand.remove(myHand[(self.hand.index(str(card[0])))])
-                myCardHand.remove(myCardHand[(self.hand.index(str(card[0])))])
-                self.hand.remove(str(card[0]))
                 self.fieldZone.append(str(card[0]))
                 n = 0
                 for i in self.fieldZone:
                     if ((str(1044 - n * 161) + str(654)) not in self.id):
                         fieldImage.append(pygame.image.load('images/' + i + '.jpg'))
-                        fieldImage[len(fieldImage) - 1] = pygame.transform.scale(fieldImage[len(fieldImage) - 1],
-                                                                                 (self.GetWidth(), self.GetHeight()))
+                        fieldImage[len(fieldImage) - 1] = pygame.transform.scale(fieldImage[len(fieldImage) - 1],(self.GetWidth(), self.GetHeight()))
                         fieldZone.append(fieldImage[len(fieldImage) - 1].get_rect())
                         fieldZone[len(fieldZone) - 1].topleft = (239, 513)
                         self.SetPosToCard(str(239) + str(513), i)
                     n = n + 1
-
 
     def GetCard(self, id):
         myCursor = self.myDB.cursor()
