@@ -12,7 +12,8 @@ class CardEffects():
         self.id = {}
         self.choice = False
         self.sacrifice = 0
-        self.fieldInfo = ''
+        self.fieldInfo = []
+        self.fieldInfoEncode = []
 
         self.myLifePoints = [8000, 8000]
         self.myDeck = []
@@ -234,6 +235,8 @@ class CardEffects():
         for i in reversed(self.myMonster[player]):
             if i == 'empty':
                 self.myMonster[player][n] = card[0]
+                self.fieldInfo[self.GetPosCard('H', str(card[0]))] = 'FUA'
+                print(self.fieldInfo)
                 break
             n = n - 1
 
@@ -261,6 +264,8 @@ class CardEffects():
         for i in reversed(self.myMonster[player]):
             if i == 'empty':
                 self.myMonster[player][n] = card[0]
+                self.fieldInfo[self.GetPosCard('H', str(card[0]))] = 'FDD'
+                print(self.fieldInfo)
                 break
             n = n - 1
 
@@ -287,10 +292,14 @@ class CardEffects():
                                     if i.collidepoint(pos):
                                         cardPos = i.topleft
                                         if cardPos[1] == 513:
+                                            self.fieldInfo[self.GetPosCard('FUA', str(self.myMonster[0][int((cardPos[0] - 400) / 161)]))] = 'G'
+                                            print(self.fieldInfo)
                                             self.myMonster[0][int((cardPos[0] - 400) / 161)] = 'empty'
                                             self.myMonsterImage[0][int((cardPos[0] - 400) / 161)] = 'empty'
                                             self.myMonsterZone[0][int((cardPos[0] - 400) / 161)] = 'empty'
                                         elif cardPos[1] == 513 + int(h):
+                                            self.fieldInfo[self.GetPosCard('FDD', str(self.myMonster[0][int((cardPos[0] - 400 + int(h)) / 161)]))] = 'G'
+                                            print(self.fieldInfo)
                                             self.myMonster[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
                                             self.myMonsterImage[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
                                             self.myMonsterZone[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
@@ -330,9 +339,43 @@ class CardEffects():
 
     def GetCardInfo(self):
         allCardInfo = self.myDb.cursor()
+        item2 = self.GetCardType("frameType")
+        item3 = self.GetCardType("race")
+        item4 = self.GetCardType("archetype")
+        item5 = self.GetCardType("attribute")
+        item6 = self.GetCardType("linkmarkers")
         for i in self.myDeck[0]:
-            allCardInfo.execute("SELECT id, name, frameType, race, archetype, atk, def, level, attribute, scale, linkval, linkmarkers FROM cards WHERE id = '" + i + "'")
-            print(allCardInfo.fetchall())
+            allCardInfo.execute("SELECT id, frameType, race, archetype, atk, def, level, attribute, scale, linkval, linkmarkers FROM cards WHERE id = '" + i + "'")
+            item = allCardInfo.fetchall()[0]
+            self.fieldInfo.append("D")
+            for i in item:
+                if i == "":
+                    self.fieldInfo.append("20000")
+                else:
+                    if str(i) in item2:
+                        self.fieldInfo.append(str(20100 + item2.index(str(i))))
+                    elif str(i) in item3:
+                        self.fieldInfo.append(str(20200 + item3.index(str(i))))
+                    elif str(i) in item4:
+                        self.fieldInfo.append(str(20300 + item4.index(str(i))))
+                    elif str(i) in item5:
+                        self.fieldInfo.append(str(20400 + item5.index(str(i))))
+                    elif str(i) in item6:
+                        self.fieldInfo.append(str(20500 + item6.index(str(i))))
+                    else:
+                        self.fieldInfo.append(str(i))
+
+        print(self.fieldInfo)
+
+    def GetCardType(self, frameType):
+        myDb = self.myDb.cursor()
+        myDb.execute("SELECT " + frameType + " FROM cards ORDER BY " + frameType)
+        items =  self.UniqueSet(myDb.fetchall())
+
+        item = []
+        for i in items:
+            item.append(i[0])
+        return item
 
 
     def SetHand(self):
@@ -346,5 +389,35 @@ class CardEffects():
                     break
             self.myMainDeck[0].remove(i)
             myHand.append(i)
+            self.fieldInfo[self.GetPosCard('D', i)] = 'H'
             hand = hand + 1
         self.myHand.append(myHand)
+        print(self.fieldInfo)
+
+    def GetPosCard(self, Pos, cardId):
+        n = 0
+        while n < len(self.fieldInfo):
+            if self.fieldInfo[n] == Pos and self.fieldInfo[n + 1] == cardId:
+                return n
+            n = n + 12
+
+
+    def UniqueSet(self, cardsInfo):
+        count = len(cardsInfo)
+        n = 0
+        j = 0
+        myset = [cardsInfo[0]]
+        match = 0
+        same = True
+        while n < count:
+            while j < len(myset):
+                if (myset[j] == cardsInfo[n]):
+                    match = match + 1
+                j = j + 1
+            if (match == 0):
+                myset.append(cardsInfo[n])
+            match = 0
+            j = 0
+            n = n + 1
+
+        return myset
