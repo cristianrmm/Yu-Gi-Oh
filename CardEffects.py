@@ -12,7 +12,7 @@ class CardEffects():
         self.id = {}
         self.choice = False
         self.sacrifice = 0
-        self.fieldInfo = []
+        self.fieldInfo = [[], []]
         self.fieldInfoEncode = []
 
         self.myLifePoints = [8000, 8000]
@@ -201,23 +201,110 @@ class CardEffects():
         return self.myFieldImage
 
     def Command(self, player, command, card):
+        if player == 0:
+            command[1] = int((command[1].topleft[0] - 400) / 101)
+        if command[0] in ['Summon', 'Set'] and card[3] in ['effect', 'normal']:
+            if (card[9] in ['5', '6']) and self.myMonster[player].count('empty') < 5:
+                chose = True
+                while chose:
+                    for event in pygame.event.get():
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            pos = pygame.mouse.get_pos()
+                            for i in self.myMonsterZone[player]:
+                                if i != 'empty':
+                                    if i .collidepoint(pos):
+                                        cardPos = i.topleft
+                                        if cardPos[1] == 513:
+                                            command.append(int((cardPos[0] - 400) / 161))
+                                            chose = False
+                                        elif cardPos[1] == 533:
+                                            command.append(int((cardPos[0] - 380) / 161))
+                                            chose = False
 
-        if command == 'Summon':
-            if (card[3] in ['effect', 'normal']):
-                if (card[9] in ['1', '2', '3', '4']):
-                    self.NormalSummon(card, player)
-                elif (card[9] in ['5', '6']):
-                    self.SacrificeSummon(card, command, player, 5)
-                elif (card[9] in ['7', '8', '9', '10', '11', '12']):
-                    self.SacrificeSummon(card, command, player, 4)
-        elif command == 'Set':
-            if (card[3] in ['effect', 'normal']):
-                if (card[9] in ['1', '2', '3', '4']):
-                    self.NormalSet(card, player)
-                elif (card[9] in ['5', '6']):
-                    self.SacrificeSummon(card, command, player, 5)
-                elif (card[9] in ['7', '8', '9', '10', '11', '12']):
-                    self.SacrificeSummon(card, command, player, 4)
+            elif (card[9] in ['7', '8', '9', '10', '11', '12'] and self.myMonster[player].count('empty') < 4):
+                chose = True
+                index = -1
+                n = 0
+                while chose:
+                    for event in pygame.event.get():
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            pos = pygame.mouse.get_pos()
+                            for i in self.myMonsterZone[player]:
+                                if i != 'empty':
+                                    if i .collidepoint(pos):
+                                        cardPos = i.topleft
+                                        if cardPos[1] == 513:
+                                            if not (index == int((cardPos[0] - 400) / 161)):
+                                                command.append(int((cardPos[0] - 400) / 161))
+                                                n = n + 1
+                                                index = int((cardPos[0] - 400) / 161)
+                                                if n == 2:
+                                                    chose = False
+                                        elif cardPos[1] == 533:
+                                            if not (index == int((cardPos[0] - 380) / 161)):
+                                                command.append(int((cardPos[0] - 380) / 161))
+                                                n = n + 1
+                                                index = int((cardPos[0] - 380) / 161)
+                                                if n == 2:
+                                                    chose = False
+        command = self.Decoder(player, command)
+        self.MainCommand(player, command)
+
+    def Decoder(self, player, newCommand):
+        command = []
+        command.append(newCommand[0])
+        command.append(newCommand[1])
+        if command[0] in ['Summon', 'Set']:
+            if (len(newCommand) >= 2):
+                command.append(self.GetCardDetail(self.myHand[player][newCommand[1]]))
+            if (len(newCommand) >= 3):
+                command.append(newCommand[2])
+                print(newCommand)
+                command.append(self.GetCardDetail(self.myMonster[player][newCommand[2]]))
+            if (len(newCommand) >= 4):
+                command.append(newCommand[3])
+                print(newCommand)
+                command.append(self.GetCardDetail(self.myMonster[player][newCommand[3]]))
+        return command
+
+    def MainCommand(self, player, command):
+        if command[0] == 'Summon':
+            if len(command) == 3 and command[2][9] in ['1', '2', '3', '4']:
+                self.NormalSummon(command[2], player)
+            elif len(command) == 5 and command[2][9] in ['5', '6']:
+                self.myMonster[player][command[3]] = 'empty'
+                self.myMonsterImage[player][command[3]] = 'empty'
+                self.myMonsterZone[player][command[3]] = 'empty'
+                self.NormalSummon(command[2], player)
+            elif len(command) == 7 and command[2][9] in ['7', '8', '9', '10', '11', '12']:
+                self.myMonster[player][command[3]] = 'empty'
+                self.myMonsterImage[player][command[3]] = 'empty'
+                self.myMonsterZone[player][command[3]] = 'empty'
+
+                self.myMonster[player][command[5]] = 'empty'
+                self.myMonsterImage[player][command[5]] = 'empty'
+                self.myMonsterZone[player][command[5]] = 'empty'
+
+                self.NormalSummon(command[2], player)
+        if command[0] == 'Set':
+            if len(command) == 3 and command[2][9] in ['1', '2', '3', '4']:
+                self.NormalSet(command[2], player)
+            elif len(command) == 5 and command[2][9] in ['5', '6']:
+                self.myMonster[player][command[3]] = 'empty'
+                self.myMonsterImage[player][command[3]] = 'empty'
+                self.myMonsterZone[player][command[3]] = 'empty'
+
+                self.NormalSet(command[2], player)
+            elif len(command) == 7 and command[2][9] in ['7', '8', '9', '10', '11', '12']:
+                self.myMonster[player][command[3]] = 'empty'
+                self.myMonsterImage[player][command[3]] = 'empty'
+                self.myMonsterZone[player][command[3]] = 'empty'
+
+                self.myMonster[player][command[5]] = 'empty'
+                self.myMonsterImage[player][command[5]] = 'empty'
+                self.myMonsterZone[player][command[5]] = 'empty'
+
+                self.NormalSet(command[2], player)
 
     def NormalSummon(self, card, player):
         h = (self.GetHeight() - self.GetWidth()) / 2
@@ -235,8 +322,7 @@ class CardEffects():
         for i in reversed(self.myMonster[player]):
             if i == 'empty':
                 self.myMonster[player][n] = card[0]
-                self.fieldInfo[self.GetPosCard('H', str(card[0]))] = 'FUA'
-                print(self.fieldInfo)
+                self.fieldInfo[player][self.GetPosCard(player, 'H', str(card[0]))] = 'FUA'
                 break
             n = n - 1
 
@@ -246,7 +332,6 @@ class CardEffects():
         self.myMonsterZone[player][n] = self.myMonsterImage[player][n].get_rect()
         self.myMonsterZone[player][n].topleft = (1044 - (4 - n) * 161, 513)
         self.SetPosToCard(str(1044 - (4 - n) * 161) + str(513), str(self.myMonster[player][n]))
-
 
     def NormalSet(self, card, player):
         h = (self.GetHeight() - self.GetWidth()) / 2
@@ -264,8 +349,7 @@ class CardEffects():
         for i in reversed(self.myMonster[player]):
             if i == 'empty':
                 self.myMonster[player][n] = card[0]
-                self.fieldInfo[self.GetPosCard('H', str(card[0]))] = 'FDD'
-                print(self.fieldInfo)
+                self.fieldInfo[player][self.GetPosCard(player,'H', str(card[0]))] = 'FDD'
                 break
             n = n - 1
 
@@ -276,44 +360,6 @@ class CardEffects():
         self.myMonsterZone[player][n] = self.myMonsterImage[player][n].get_rect()
         self.myMonsterZone[player][n].topleft = (1044 - (4 - n) * 161 - int(h), 513 + int(h))
         self.SetPosToCard(str(1044 - (4 - n) * 161 - int(h)) + str(513 + int(h)), str(self.myMonster[player][n]))
-
-    def SacrificeSummon(self, card, command, player, n):
-        h = (self.GetHeight() - self.GetWidth()) / 2
-        if (self.myMonster[player].count('empty') < n):
-            if (player == 0):
-                chose = True
-                n = 0
-                while chose:
-                    for event in pygame.event.get():
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            pos = pygame.mouse.get_pos()
-                            for i in self.myMonsterZone[player]:
-                                if i != 'empty':
-                                    if i.collidepoint(pos):
-                                        cardPos = i.topleft
-                                        if cardPos[1] == 513:
-                                            self.fieldInfo[self.GetPosCard('FUA', str(self.myMonster[0][int((cardPos[0] - 400) / 161)]))] = 'G'
-                                            print(self.fieldInfo)
-                                            self.myMonster[0][int((cardPos[0] - 400) / 161)] = 'empty'
-                                            self.myMonsterImage[0][int((cardPos[0] - 400) / 161)] = 'empty'
-                                            self.myMonsterZone[0][int((cardPos[0] - 400) / 161)] = 'empty'
-                                        elif cardPos[1] == 513 + int(h):
-                                            self.fieldInfo[self.GetPosCard('FDD', str(self.myMonster[0][int((cardPos[0] - 400 + int(h)) / 161)]))] = 'G'
-                                            print(self.fieldInfo)
-                                            self.myMonster[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
-                                            self.myMonsterImage[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
-                                            self.myMonsterZone[0][int((cardPos[0] - 400 + int(h)) / 161)] = 'empty'
-                                        n = n + 1
-                                    if (card[9] in ['5', '6']):
-                                        if n == 1:
-                                            chose = False
-                                    elif (card[9] in ['7', '8', '9', '10', '11', '12']):
-                                        if n == 2:
-                                            chose = False
-                if command == 'Summon':
-                    self.NormalSummon(card, player)
-                elif command == 'Set':
-                    self.NormalSet(card, player)
 
     def SetDeck(self):
         getDeck = self.myDb.cursor()
@@ -326,6 +372,7 @@ class CardEffects():
             self.myDeck[0].append(i[0])
             self.myMainDeck[0].append(i[0])
         numpy.random.shuffle(self.myMainDeck[0])
+        self.GetCardInfo(0)
 
         getDeck.execute("SELECT cardId FROM decks WHERE userID = 'yugi' ORDER BY name")
         cards = getDeck.fetchall()
@@ -335,9 +382,14 @@ class CardEffects():
             self.myDeck[1].append(i[0])
             self.myMainDeck[1].append(i[0])
         numpy.random.shuffle(self.myMainDeck[1])
-        self.GetCardInfo()
+        self.GetCardInfo(1)
 
-    def GetCardInfo(self):
+    def GetCardDetail(self, id):
+        mydb = self.myDb.cursor()
+        mydb.execute("SELECT * FROM cards WHERE id = '" + str(id) + "'" )
+        return mydb.fetchall()[0]
+
+    def GetCardInfo(self, player):
         allCardInfo = self.myDb.cursor()
         item2 = self.GetCardType("frameType")
         item3 = self.GetCardType("race")
@@ -347,25 +399,23 @@ class CardEffects():
         for i in self.myDeck[0]:
             allCardInfo.execute("SELECT id, frameType, race, archetype, atk, def, level, attribute, scale, linkval, linkmarkers FROM cards WHERE id = '" + i + "'")
             item = allCardInfo.fetchall()[0]
-            self.fieldInfo.append("D")
+            self.fieldInfo[player].append("D")
             for i in item:
                 if i == "":
-                    self.fieldInfo.append("20000")
+                    self.fieldInfo[player].append("20000")
                 else:
                     if str(i) in item2:
-                        self.fieldInfo.append(str(20100 + item2.index(str(i))))
+                        self.fieldInfo[player].append(str(20100 + item2.index(str(i))))
                     elif str(i) in item3:
-                        self.fieldInfo.append(str(20200 + item3.index(str(i))))
+                        self.fieldInfo[player].append(str(20200 + item3.index(str(i))))
                     elif str(i) in item4:
-                        self.fieldInfo.append(str(20300 + item4.index(str(i))))
+                        self.fieldInfo[player].append(str(20300 + item4.index(str(i))))
                     elif str(i) in item5:
-                        self.fieldInfo.append(str(20400 + item5.index(str(i))))
+                        self.fieldInfo[player].append(str(20400 + item5.index(str(i))))
                     elif str(i) in item6:
-                        self.fieldInfo.append(str(20500 + item6.index(str(i))))
+                        self.fieldInfo[player].append(str(20500 + item6.index(str(i))))
                     else:
-                        self.fieldInfo.append(str(i))
-
-        print(self.fieldInfo)
+                        self.fieldInfo[player].append(str(i))
 
     def GetCardType(self, frameType):
         myDb = self.myDb.cursor()
@@ -384,23 +434,34 @@ class CardEffects():
         for i in reversed(self.myMainDeck[0]):
             if hand == 5:
                 break
-            elif len(self.myHand) > 0:
-                if len(self.myHand[len(self.myHand) - 1] == 5):
+            elif len(myHand) > 0:
+                if len(myHand[len(myHand) - 1]) == 5:
                     break
             self.myMainDeck[0].remove(i)
             myHand.append(i)
-            self.fieldInfo[self.GetPosCard('D', i)] = 'H'
+            self.fieldInfo[0][self.GetPosCard(0, 'D', i)] = 'H'
             hand = hand + 1
         self.myHand.append(myHand)
-        print(self.fieldInfo)
+        hand = 0
+        myHand = []
+        for i in reversed(self.myMainDeck[1]):
+            if hand == 5:
+                break
+            elif len(myHand) > 0:
+                if len(myHand[len(myHand) - 1]) == 5:
+                    break
+            self.myMainDeck[1].remove(i)
+            myHand.append(i)
+            self.fieldInfo[1][self.GetPosCard(1, 'D', i)] = 'H'
+            hand = hand + 1
+        self.myHand.append(myHand)
 
-    def GetPosCard(self, Pos, cardId):
+    def GetPosCard(self, player, Pos, cardId):
         n = 0
-        while n < len(self.fieldInfo):
-            if self.fieldInfo[n] == Pos and self.fieldInfo[n + 1] == cardId:
+        while n < len(self.fieldInfo[player]):
+            if self.fieldInfo[player][n] == Pos and self.fieldInfo[player][n + 1] == cardId:
                 return n
             n = n + 12
-
 
     def UniqueSet(self, cardsInfo):
         count = len(cardsInfo)
