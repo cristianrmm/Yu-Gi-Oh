@@ -200,39 +200,47 @@ class CardEffects():
     def GetMyFieldImage(self):
         return self.myFieldImage
 
+    def SummonSetCard(self, player, card):
+        if card[9] in ['1', '2', '3', '4']:
+            return True
+        elif card[9] in ['5', '6']:
+            if self.myMonster[player].count('empty') < 5:
+                return True
+            else:
+                return False
+        elif card[9] in ['7', '8', '9', '10', '11', '12']:
+            if self.myMonster[player].count('empty') < 4:
+                return True
+            else:
+                return False
+        else:
+            return False
+
     def Command(self, player, command, card):
         if player == 0:
             command[1] = int((command[1].topleft[0] - 400) / 101)
         if command[0] in ['Summon', 'Set'] and card[3] in ['effect', 'normal']:
-            if (card[9] in ['5', '6']) and self.myMonster[player].count('empty') < 5:
-                chose = True
-                while chose:
-                    for event in pygame.event.get():
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            pos = pygame.mouse.get_pos()
-                            for i in self.myMonsterZone[player]:
-                                if i != 'empty':
-                                    if i .collidepoint(pos):
-                                        cardPos = i.topleft
+            chose = True
+            index = -1
+            n = 0
+            if card[9] in ['1', '2', '3', '4']:
+                chose = False
+            while chose:
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        pos = pygame.mouse.get_pos()
+                        for i in self.myMonsterZone[player]:
+                            if i != 'empty':
+                                if i .collidepoint(pos):
+                                    cardPos = i.topleft
+                                    if (card[9] in ['5', '6']) and self.myMonster[player].count('empty') < 5:
                                         if cardPos[1] == 513:
                                             command.append(int((cardPos[0] - 400) / 161))
                                             chose = False
                                         elif cardPos[1] == 533:
                                             command.append(int((cardPos[0] - 380) / 161))
                                             chose = False
-
-            elif (card[9] in ['7', '8', '9', '10', '11', '12'] and self.myMonster[player].count('empty') < 4):
-                chose = True
-                index = -1
-                n = 0
-                while chose:
-                    for event in pygame.event.get():
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            pos = pygame.mouse.get_pos()
-                            for i in self.myMonsterZone[player]:
-                                if i != 'empty':
-                                    if i .collidepoint(pos):
-                                        cardPos = i.topleft
+                                    elif (card[9] in ['7', '8', '9', '10', '11', '12'] and self.myMonster[player].count('empty') < 4):
                                         if cardPos[1] == 513:
                                             if not (index == int((cardPos[0] - 400) / 161)):
                                                 command.append(int((cardPos[0] - 400) / 161))
@@ -247,8 +255,32 @@ class CardEffects():
                                                 index = int((cardPos[0] - 380) / 161)
                                                 if n == 2:
                                                     chose = False
+
+        self.Save(player, command)
         command = self.Decoder(player, command)
         self.MainCommand(player, command)
+
+    def Save(self, player, command):
+        commandSave = []
+        for i in command:
+            commandSave.append(str(i))
+        com = ':'.join(commandSave)
+        fieldInfo = ':'.join(self.fieldInfo[player])
+        myCursor = self.myDb.cursor()
+        sql = """CREATE TABLE IF NOT EXISTS all_dual(field_Input TEXT,
+                                                     field_Output TEXT,
+                                                     dual_index INT AUTO_INCREMENT PRIMARY KEY
+                                                     )
+                 """
+        myCursor.execute(sql)
+
+        info = """INSERT INTO all_dual(field_Input,
+                                       field_Output
+                                       ) VALUES(%s, %s)
+                         """
+        myCursor.execute(info, (fieldInfo, com))
+
+
 
     def Decoder(self, player, newCommand):
         command = []
@@ -259,11 +291,9 @@ class CardEffects():
                 command.append(self.GetCardDetail(self.myHand[player][newCommand[1]]))
             if (len(newCommand) >= 3):
                 command.append(newCommand[2])
-                print(newCommand)
                 command.append(self.GetCardDetail(self.myMonster[player][newCommand[2]]))
             if (len(newCommand) >= 4):
                 command.append(newCommand[3])
-                print(newCommand)
                 command.append(self.GetCardDetail(self.myMonster[player][newCommand[3]]))
         return command
 
@@ -396,6 +426,7 @@ class CardEffects():
         item4 = self.GetCardType("archetype")
         item5 = self.GetCardType("attribute")
         item6 = self.GetCardType("linkmarkers")
+        item7 = ['D', 'H', 'FDD', 'FUA']
         for i in self.myDeck[0]:
             allCardInfo.execute("SELECT id, frameType, race, archetype, atk, def, level, attribute, scale, linkval, linkmarkers FROM cards WHERE id = '" + i + "'")
             item = allCardInfo.fetchall()[0]
