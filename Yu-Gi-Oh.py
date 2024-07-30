@@ -255,7 +255,7 @@ def PlayGame(myDB):
     zone.OpGetDeckString()
     hand = myCardEffects.GetMyHand()
     opHand = zone.OpGetHand()
-    myHand = myCardEffects.SetHand()
+    myCardEffects.SetHand()
     myOpHand = []
     myCardHand = []
     myOpCardHand = []
@@ -281,6 +281,7 @@ def PlayGame(myDB):
     oldid = ''
     opponent = False
     gameCardInfo = False
+    activateCard = False
 
     buttonX = 0
     buttonY = 0
@@ -298,7 +299,7 @@ def PlayGame(myDB):
     oponentHidenCard = hidden.get_rect()
     oponentHidenCard.topleft = (x + (zone.GetHeight() + w) * -1, y + (zone.GetHeight() + h) * 0)
 
-    showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h)
+    showHand(myCardEffects, hand, myCardHand, x, y, w, h)
 
     n = 0
     for i in opHand:
@@ -398,20 +399,21 @@ def PlayGame(myDB):
                 for i in imgCardInfo:
                     if i.collidepoint(event.pos):
                         show = False
+                activateCard = myCardEffects.SummonSetCard(0, cardInformation)
                 for i  in action:
                     if i[0] == 'Info':
                         if i[1].collidepoint(event.pos):
                             gameCardInfo = True
-                    if i[0] in ['Summon', 'Set', 'Activate']:
+                    if i[0] in ['Summon', 'Set', 'Activate', 'Set Card']:
                         if i[1].collidepoint(event.pos):
-                            myCardEffects.Command(0, i[0], cardInformation)
+                            myCardEffects.Command(0, i, cardInformation)
+                            #myCardEffects.Command_1(0, i[0], cardInformation)
                             #zone.command(screen, myHand, myCardHand, i[0], cardInformation, monstersImage, monsterZone, spellTrapImage, spellTrapZone, fieldImage, fieldZone)
                             monstersImage = myCardEffects.GetMyMonsterImage()[0]
                             monsterZone = myCardEffects.GetMyMonsterZone()[0]
                             show = False
-                            myHand = []
                             myCardHand = []
-                            showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h)
+                            showHand(myCardEffects, hand, myCardHand, x, y, w, h)
 
         zone.Field(x, y, w, h)
         zone.MyLifePoint(1450, 20)
@@ -461,18 +463,28 @@ def PlayGame(myDB):
 
             if not opponent:
                 if (cardInformation[3] == 'spell'):
-                    action.append(['Activate', pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30))])
-                    textSurface = myfont.render('Activate', False, (0, 0, 0))
-                    screen.blit(textSurface, (buttonX, buttonY - 70))
+                    if (activateCard):
+                        action.append(['Activate', pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30))])
+                        textSurface = myfont.render('Activate', False, (0, 0, 0))
+                        screen.blit(textSurface, (buttonX, buttonY - 70))
 
-                if (cardInformation[3] == 'normal' or cardInformation[3] == 'effect'):
+                    action.append(['Set Card', pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30))])
+                    textSurface = myfont.render('Set', False, (0, 0, 0))
+                    screen.blit(textSurface, (buttonX, buttonY - 35))
+
+                if (cardInformation[3] == 'trap'):
+                    action.append(['Set Card', pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30))])
+                    textSurface = myfont.render('Set', False, (0, 0, 0))
+                    screen.blit(textSurface, (buttonX, buttonY - 35))
+
+                if ((cardInformation[3] == 'normal' or cardInformation[3] == 'effect') and activateCard):
                     action.append(['Summon', pygame.draw.rect(screen, 'blue', (buttonX, buttonY - 70, 123, 30))])
                     textSurface = myfont.render('Summon', False, (0, 0, 0))
                     screen.blit(textSurface, (buttonX, buttonY - 70))
 
-                action.append(['Set', pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30))])
-                textSurface = myfont.render('Set', False, (0, 0, 0))
-                screen.blit(textSurface, (buttonX, buttonY - 35))
+                    action.append(['Set', pygame.draw.rect(screen, 'green', (buttonX, buttonY - 35, 123, 30))])
+                    textSurface = myfont.render('Set', False, (0, 0, 0))
+                    screen.blit(textSurface, (buttonX, buttonY - 35))
 
             if gameCardInfo:
                 pygame.draw.rect(screen, 'grey', (250, 100, 1035, 600))
@@ -493,7 +505,7 @@ def PlayGame(myDB):
         #dt = clock.tick(60) / 1000
     pygame.quit()
 
-def showHand(myCardEffects, hand, myHand, myCardHand, x, y, w, h):
+def showHand(myCardEffects, hand, myCardHand, x, y, w, h):
     myCardEffects.DeleteMyHandZoneImage()
     n = 0
     for i in hand[0]:
