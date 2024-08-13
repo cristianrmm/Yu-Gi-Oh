@@ -194,7 +194,7 @@ class Field():
 
     def SetCards(self):
         getDeck = self.myDB.cursor()
-        getDeck.execute("SELECT cardId FROM decks WHERE userID = 'yugi' ORDER BY name")
+        getDeck.execute("SELECT cardId FROM decks WHERE userID = 'Starter Deck Yugi' ORDER BY name")
         cards = getDeck.fetchall()
         for i in cards:
             self.deck.append(i[0])
@@ -202,7 +202,7 @@ class Field():
         numpy.random.shuffle(self.mainDeck)
 
         opGetDeck = self.myDB.cursor()
-        opGetDeck.execute("SELECT cardId FROM decks WHERE userID = 'yugi' ORDER BY name")
+        opGetDeck.execute("SELECT cardId FROM decks WHERE userID = 'Starter Deck Yugi' ORDER BY name")
         opCards = opGetDeck.fetchall()
         for i in opCards:
             self.opDeck.append(i[0])
